@@ -38,6 +38,7 @@ import {
   isSecondaryDropdownActive,
 } from '../../utils/headerNavigation';
 import { BORROWBOX_TRANSPARENT_SYMBOL_ASSET_PATH } from '../../utils/introAnimation';
+import { BorrowBoxLogo } from '../BorrowBoxLogo';
 import { ALL_CITIES } from '../../utils/rentalLogic';
 import { PageRoute } from '../Navbar';
 import { CitySelectorModal } from '../location/CitySelectorModal';
@@ -193,16 +194,14 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
             e.preventDefault();
             handleNavigate({ page: 'home' });
           }}
-          className="group inline-flex items-center gap-2 text-lg font-bold tracking-tight text-[#F8FAFC] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8B5CF6]"
+          className="group focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8B5CF6] rounded-lg transition-transform duration-150 hover:opacity-95"
+          aria-label="BorrowBox Home"
         >
-          <img
-            src={BORROWBOX_TRANSPARENT_SYMBOL_ASSET_PATH}
-            alt=""
-            className="w-10 h-10 object-contain shrink-0 -mx-1.5"
+          <BorrowBoxLogo
+            symbolSize="2.35rem"
+            textSize="text-lg lg:text-xl font-bold tracking-tight"
+            idPrefix="dtop-hdr-logo"
           />
-          <span>
-            Borrow<span className="text-[#8B5CF6]">Box</span>
-          </span>
         </a>
       </div>
 

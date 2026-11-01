@@ -277,8 +277,8 @@ export function canManageTargetAdmin(
   const normalizedTarget = normalizeAdminEmail(targetEmail);
   const normalizedActor = normalizeAdminEmail(actor.email);
 
-  // Protect the primary root Super Admin from being demoted or deactivated
-  if (normalizedTarget === PRIMARY_SUPER_ADMIN_EMAIL) {
+  // Protect root Super Admins from being demoted or deactivated
+  if (normalizedTarget === PRIMARY_SUPER_ADMIN_EMAIL || normalizedTarget === 'gaureshsharma@gmail.com') {
     if (requestedNewRole && requestedNewRole !== 'super_admin') {
       return {
         allowed: false,

@@ -1,5 +1,6 @@
 import React from 'react';
 import { BORROWBOX_TRANSPARENT_SYMBOL_ASSET_PATH } from '../../utils/introAnimation';
+import { BorrowBoxLogo } from '../BorrowBoxLogo';
 import { PageRoute } from '../Navbar';
 
 export type FooterInfoPageKey = string;
@@ -47,16 +48,15 @@ const FooterComponent: React.FC<FooterProps> = ({ onNavigate }) => {
             <a
               href="/"
               onClick={(e) => handleLinkClick(e, { page: 'home' })}
-              className="inline-flex items-center gap-2.5 text-lg font-bold tracking-tight text-[#F8FAFC] group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8B5CF6] rounded-lg"
+              className="inline-flex items-center group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8B5CF6] rounded-lg"
+              aria-label="BorrowBox Home"
             >
-              <img
-                src={BORROWBOX_TRANSPARENT_SYMBOL_ASSET_PATH}
-                alt="BorrowBox Logo"
-                className="w-10 h-10 object-contain shrink-0 -mx-1.5 transition-transform duration-200 group-hover:scale-105"
+              <BorrowBoxLogo
+                symbolSize="2.5rem"
+                textSize="text-xl font-bold tracking-tight"
+                showTagline
+                idPrefix="footer-brand-logo"
               />
-              <span>
-                Borrow<span className="text-[#8B5CF6]">Box</span>
-              </span>
             </a>
             <p className="text-sm text-[#94A3B8] leading-relaxed max-w-sm">
               Access more. Own less. India&apos;s verified peer-to-peer rental marketplace

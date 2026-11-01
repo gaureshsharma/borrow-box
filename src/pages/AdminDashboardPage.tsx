@@ -91,6 +91,7 @@ import {
 } from '../services/firebase';
 import { ProductImage } from '../components/ProductImage';
 import { BORROWBOX_TRANSPARENT_SYMBOL_ASSET_PATH } from '../utils/introAnimation';
+import { BorrowBoxLogo } from '../components/BorrowBoxLogo';
 import { PageRoute } from '../components/Navbar';
 import { AdminTicketsModule } from '../components/support/AdminTicketsModule';
 import {
@@ -1553,24 +1554,14 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
           {/* Brand Header */}
           <div className="h-16 px-5 border-b border-white/[0.08] flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <img
-                src={BORROWBOX_TRANSPARENT_SYMBOL_ASSET_PATH}
-                alt=""
-                className="w-9 h-9 object-contain shrink-0 -mx-1"
+              <BorrowBoxLogo
+                symbolSize="2rem"
+                textSize="text-sm font-bold tracking-tight"
+                idPrefix="admin-dash-logo"
               />
-              <div>
-                <div className="text-sm font-bold tracking-tight text-[#F8FAFC] flex items-center gap-1.5">
-                  <span>
-                    Borrow<span className="text-[#8B5CF6]">Box</span>
-                  </span>
-                  <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-[#8B5CF6]/20 text-[#8B5CF6] border border-[#8B5CF6]/30">
-                    Admin
-                  </span>
-                </div>
-                <p className="text-[10px] text-[#94A3B8] font-mono">
-                  RBAC Governance Console
-                </p>
-              </div>
+              <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-[#8B5CF6]/20 text-[#8B5CF6] border border-[#8B5CF6]/30">
+                Admin
+              </span>
             </div>
 
             <button

@@ -35,6 +35,7 @@ import {
 } from '../../utils/adminRbac';
 import { SECONDARY_INFO_NAV_ITEMS } from '../../utils/headerNavigation';
 import { BORROWBOX_TRANSPARENT_SYMBOL_ASSET_PATH } from '../../utils/introAnimation';
+import { BorrowBoxLogo } from '../BorrowBoxLogo';
 import { mobileMenuPanelTransition } from '../../utils/motionVariants';
 import { ALL_CATEGORIES } from '../../utils/rentalLogic';
 import { PageRoute } from '../Navbar';
@@ -142,16 +143,14 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
             e.preventDefault();
             handleMobileNavigate({ page: 'home' });
           }}
-          className="inline-flex items-center gap-1.5 text-sm sm:text-base font-bold tracking-tight text-[#F8FAFC] min-h-[40px] shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8B5CF6]"
+          className="inline-flex items-center min-h-[40px] shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8B5CF6] rounded-lg"
+          aria-label="BorrowBox Home"
         >
-          <img
-            src={BORROWBOX_TRANSPARENT_SYMBOL_ASSET_PATH}
-            alt=""
-            className="w-8 h-8 sm:w-9 sm:h-9 object-contain shrink-0 -mx-1"
+          <BorrowBoxLogo
+            symbolSize="2rem"
+            textSize="text-base font-bold tracking-tight"
+            idPrefix="mob-hdr-logo"
           />
-          <span className="truncate">
-            Borrow<span className="text-[#8B5CF6]">Box</span>
-          </span>
         </a>
 
         {/* Right: Directly Visible Auth Actions (or Authenticated Controls) + Hamburger Menu */}

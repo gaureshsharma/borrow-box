@@ -6,6 +6,19 @@
 export const BORROWBOX_TRANSPARENT_SYMBOL_ASSET_PATH =
   '/assets/borrowbox-symbol-transparent.svg';
 
+/**
+ * Resolves static public assets safely across any deployment base path
+ * (e.g. root '/' on custom domains/localhost vs './' or '/borrow-box/' on GitHub Pages).
+ */
+export function resolveAssetPath(assetPath: string): string {
+  if (assetPath.startsWith('/')) {
+    const base = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || './';
+    const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
+    return `${cleanBase}${assetPath}`;
+  }
+  return assetPath;
+}
+
 /** Original uploaded logo asset kept untouched */
 export const ORIGINAL_UPLOADED_LOGO_PATH = '/logo.png';
 

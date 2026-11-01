@@ -15,6 +15,7 @@ import { motion, useReducedMotion } from 'motion/react';
 import { PageRoute } from '../components/Navbar';
 import { PRODUCT_IMAGES } from '../assets/imageRegistry';
 import { BORROWBOX_TRANSPARENT_SYMBOL_ASSET_PATH } from '../utils/introAnimation';
+import { BorrowBoxSymbol } from '../components/BorrowBoxLogo';
 import { TEAM_MEMBERS, TEAM_PAGE_CONTENT } from '../data/teamMembers';
 import { TeamIntroduction } from '../components/about/TeamIntroduction';
 import { TeamScrollShowcase } from '../components/about/TeamScrollShowcase';
@@ -134,13 +135,7 @@ export const AboutUsPage: React.FC<AboutUsPageProps> = ({ onNavigate }) => {
               className="lg:col-span-7 space-y-6"
             >
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#161E2E] border border-white/[0.08] text-xs font-semibold text-[#A78BFA]">
-                <img
-                  src={BORROWBOX_TRANSPARENT_SYMBOL_ASSET_PATH}
-                  alt=""
-                  width={16}
-                  height={16}
-                  className="w-4 h-4 object-contain"
-                />
+                <BorrowBoxSymbol className="w-4 h-4 shrink-0" idPrefix="about-hero-sym" />
                 <span>The Peer-to-Peer Rental Marketplace</span>
               </div>
 

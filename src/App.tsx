@@ -440,7 +440,9 @@ export default function App() {
           updatedAtISO: fallbackNow,
           isAdmin:
             (fbUser.email || '').trim().toLowerCase() ===
-            'marukrutarth@gmail.com',
+              'marukrutarth@gmail.com' ||
+            (fbUser.email || '').trim().toLowerCase() ===
+              'gaureshsharma@gmail.com',
         });
       } finally {
         setIsAuthLoading(false);

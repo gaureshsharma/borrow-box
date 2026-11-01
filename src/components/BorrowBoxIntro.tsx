@@ -5,6 +5,7 @@ import {
   DEFAULT_INTRO_TIMING,
   IdentityRevealScene,
   markIntroAnimationPlayed,
+  resolveAssetPath,
 } from '../utils/introAnimation';
 
 export interface BorrowBoxIntroProps {
@@ -220,7 +221,7 @@ export const BorrowBoxIntro: React.FC<BorrowBoxIntroProps> = ({
             >
               {/* Settled Standalone Transparent SVG Asset Layer */}
               <motion.img
-                src={BORROWBOX_TRANSPARENT_SYMBOL_ASSET_PATH}
+                src={resolveAssetPath(BORROWBOX_TRANSPARENT_SYMBOL_ASSET_PATH)}
                 alt="BorrowBox Symbol"
                 draggable={false}
                 initial={{ opacity: 0 }}
