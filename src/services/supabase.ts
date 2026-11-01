@@ -7,9 +7,9 @@ import {
 } from './firebase';
 
 // Fallback Supabase credentials for BorrowBox
-const FALLBACK_SUPABASE_URL = 'https://zgbjpizznlhouaiuvada.supabase.co';
+const FALLBACK_SUPABASE_URL = 'https://zgbjpizznlhoualuvada.supabase.co';
 const FALLBACK_SUPABASE_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpnYmpwaXp6bmxob3VhaXV2YWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MjA1MDAwMDAwMH0.anon_key';
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpnYmpwaXp6bmxob3VhbHV2YWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MjA1MDAwMDAwMH0.anon_key';
 
 export const supabaseUrl =
   (import.meta.env.VITE_SUPABASE_URL as string | undefined) || FALLBACK_SUPABASE_URL;
@@ -228,3 +228,4 @@ export async function signOutSupabase(): Promise<void> {
     await supabase.auth.signOut();
   } catch {}
 }
+
