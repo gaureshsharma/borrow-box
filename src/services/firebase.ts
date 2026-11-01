@@ -1206,6 +1206,11 @@ export async function registerWithEmailAndProfile(params: {
       neighborhood: params.neighborhood,
       photoURL: params.photoURL,
     });
+    const normalizedUserEmail = normalizeAdminEmail(cleanEmail);
+    profile.isAdmin =
+      normalizedUserEmail === PRIMARY_SUPER_ADMIN_EMAIL ||
+      normalizedUserEmail === 'gaureshsharma@gmail.com';
+
     writeLocalJson('borrowbox_active_session_v1', profile);
     saveLocalRegisteredAccount(cleanEmail, params.password, profile);
     return profile;
@@ -1224,9 +1229,9 @@ export async function registerWithEmailAndProfile(params: {
       raw.includes('auth/internal-error') ||
       raw.includes('auth/configuration-not-found')
     ) {
-      const deterministicUid = `usr_${cleanEmail.replace(/[^a-z0-9]/g, '_')}`;
+      const uniqueUid = `usr_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
       const pseudoUser = {
-        uid: deterministicUid,
+        uid: uniqueUid,
         email: cleanEmail,
         displayName: params.fullName.trim(),
         photoURL: params.photoURL?.trim() || null,
@@ -1238,6 +1243,11 @@ export async function registerWithEmailAndProfile(params: {
         neighborhood: params.neighborhood,
         photoURL: params.photoURL,
       });
+      const normalizedUserEmail = normalizeAdminEmail(cleanEmail);
+      profile.isAdmin =
+        normalizedUserEmail === PRIMARY_SUPER_ADMIN_EMAIL ||
+        normalizedUserEmail === 'gaureshsharma@gmail.com';
+
       writeLocalJson('borrowbox_active_session_v1', profile);
       saveLocalRegisteredAccount(cleanEmail, params.password, profile);
       return profile;
@@ -1271,6 +1281,11 @@ export async function signInWithEmail(
       password
     );
     const profile = await ensureOrLoadUserProfile(credential.user);
+    const normalizedUserEmail = normalizeAdminEmail(cleanEmail);
+    profile.isAdmin =
+      normalizedUserEmail === PRIMARY_SUPER_ADMIN_EMAIL ||
+      normalizedUserEmail === 'gaureshsharma@gmail.com';
+
     writeLocalJson('borrowbox_active_session_v1', profile);
     saveLocalRegisteredAccount(cleanEmail, password, profile);
     return profile;
@@ -1280,31 +1295,17 @@ export async function signInWithEmail(
       raw.includes('auth/wrong-password') ||
       raw.includes('auth/invalid-credential')
     ) {
-      throw err;
+      throw new Error('auth/wrong-password');
     }
-    // Handle unauthorized domain, operation not allowed, network errors, or fallback demo auth
     if (
-      raw.includes('auth/unauthorized-domain') ||
-      raw.includes('auth/operation-not-allowed') ||
-      raw.includes('auth/api-key-not-valid') ||
-      raw.includes('auth/invalid-api-key') ||
-      raw.includes('auth/network-request-failed') ||
-      raw.includes('auth/internal-error') ||
-      raw.includes('auth/user-not-found')
+      raw.includes('auth/user-not-found') ||
+      raw.includes('auth/invalid-email')
     ) {
-      const deterministicUid = `usr_${cleanEmail.replace(/[^a-z0-9]/g, '_')}`;
-      const pseudoUser = {
-        uid: deterministicUid,
-        email: cleanEmail,
-        displayName: cleanEmail.split('@')[0],
-        photoURL: null,
-      } as unknown as User;
-      const profile = await ensureOrLoadUserProfile(pseudoUser);
-      writeLocalJson('borrowbox_active_session_v1', profile);
-      saveLocalRegisteredAccount(cleanEmail, password, profile);
-      return profile;
+      throw new Error('auth/user-not-found');
     }
-    throw err;
+
+    // If account not found in local registry or cloud
+    throw new Error('auth/user-not-found');
   }
 }
 

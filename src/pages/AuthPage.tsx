@@ -19,7 +19,6 @@ import {
   FIREBASE_PROJECT_ID,
   registerWithEmailAndProfile,
   sendPasswordReset,
-  signInWithDemoAccount,
   signInWithEmail,
   signInWithGooglePopup,
 } from '../services/firebase';
@@ -113,22 +112,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   const [neighborhood, setNeighborhood] = useState('Indiranagar');
   const [photoURL, setPhotoURL] = useState('');
   const [password, setPassword] = useState('');
-
-  const handleDemoLogin = async (type: 'renter' | 'owner' | 'admin') => {
-    setAuthError(null);
-    setStatusMessage(null);
-    setIsLoading(true);
-    try {
-      const profile = await signInWithDemoAccount(type);
-      setStatusMessage(`Authenticated as ${profile.name}`);
-      onAuthenticated(profile);
-    } catch (err) {
-      const formatted = formatFirebaseAuthError(err);
-      setAuthError(formatted.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const availableCities = React.useMemo(() => {
     if (!selectedState) return ALL_CITIES;
@@ -290,48 +273,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 : 'Enter your email address to receive password reset instructions.'}
             </p>
           </div>
-
-          {/* 1-Click Instant Test Accounts */}
-          {viewMode !== 'reset' && (
-            <div className="p-3.5 rounded-xl bg-[#8B5CF6]/10 border border-[#8B5CF6]/25 space-y-2.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-purple-300 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                  Instant Test Sign-In (1-Click)
-                </span>
-                <span className="text-[10px] text-purple-300/70 font-mono">Verified Session</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  disabled={isLoading || isGoogleLoading}
-                  onClick={() => handleDemoLogin('renter')}
-                  className="px-2 py-1.5 bg-[#1E1B4B]/80 hover:bg-[#2E1065] text-purple-200 border border-purple-500/30 rounded-lg text-xs font-medium text-center transition-all cursor-pointer flex flex-col items-center gap-0.5 active:scale-95"
-                >
-                  <span className="font-bold text-[11px]">👤 Renter</span>
-                  <span className="text-[9px] text-purple-300/70 truncate w-full">Priya S.</span>
-                </button>
-                <button
-                  type="button"
-                  disabled={isLoading || isGoogleLoading}
-                  onClick={() => handleDemoLogin('owner')}
-                  className="px-2 py-1.5 bg-[#1E1B4B]/80 hover:bg-[#2E1065] text-purple-200 border border-purple-500/30 rounded-lg text-xs font-medium text-center transition-all cursor-pointer flex flex-col items-center gap-0.5 active:scale-95"
-                >
-                  <span className="font-bold text-[11px]">📦 Lender</span>
-                  <span className="text-[9px] text-purple-300/70 truncate w-full">Rahul V.</span>
-                </button>
-                <button
-                  type="button"
-                  disabled={isLoading || isGoogleLoading}
-                  onClick={() => handleDemoLogin('admin')}
-                  className="px-2 py-1.5 bg-[#1E1B4B]/80 hover:bg-[#2E1065] text-purple-200 border border-purple-500/30 rounded-lg text-xs font-medium text-center transition-all cursor-pointer flex flex-col items-center gap-0.5 active:scale-95"
-                >
-                  <span className="font-bold text-[11px]">🛡️ Admin</span>
-                  <span className="text-[9px] text-purple-300/70 truncate w-full">Gauresh S.</span>
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Google Sign-In Button */}
           {viewMode !== 'reset' && (

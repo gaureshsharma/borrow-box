@@ -120,3 +120,4 @@ export const HomeTeamSpotlight: React.FC<HomeTeamSpotlightProps> = ({ onNavigate
     </section>
   );
 };
+

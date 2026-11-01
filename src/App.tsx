@@ -403,7 +403,14 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (!fbUser) {
         const persisted = getPersistedSessionProfile();
-        if (persisted) {
+        // If persisted profile is valid and NOT an old test account
+        if (
+          persisted &&
+          persisted.uid &&
+          persisted.uid !== 'usr_admin_gaureshsharma' &&
+          persisted.uid !== 'usr_owner_rahul_verma' &&
+          persisted.uid !== 'usr_renter_priya_sharma'
+        ) {
           setUserProfile(persisted);
           const pseudoUser = {
             uid: persisted.uid,
@@ -414,6 +421,12 @@ export default function App() {
           setFirebaseUser(pseudoUser);
           setIsAuthLoading(false);
           return;
+        } else if (persisted) {
+          try {
+            if (typeof window !== 'undefined' && window.localStorage) {
+              window.localStorage.removeItem('borrowbox_active_session_v1');
+            }
+          } catch {}
         }
         setFirebaseUser(null);
         setUserProfile(null);
@@ -874,7 +887,7 @@ export default function App() {
       setPendingProtectedRoute(null);
       handleNavigate(target);
     } else {
-      handleNavigate({ page: 'profile' });
+      handleNavigate({ page: 'dashboard' });
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };

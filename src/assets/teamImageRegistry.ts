@@ -17,3 +17,4 @@ export const TEAM_IMAGE_MAP: Record<string, string> = {
 export function getTeamMemberPhoto(memberId: string, fallbackUrl?: string): string {
   return TEAM_IMAGE_MAP[memberId] || fallbackUrl || guideImg;
 }
+
