@@ -97,6 +97,9 @@ export function isPrimaryNavActive(
   if (itemId === 'list-item') {
     return currentRoute.page === 'list-item';
   }
+  if (itemId === 'team') {
+    return currentRoute.page === 'team';
+  }
   return currentRoute.page === itemId;
 }
 

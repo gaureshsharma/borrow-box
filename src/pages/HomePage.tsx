@@ -13,6 +13,7 @@ import { FeaturedProducts } from '../components/home/FeaturedProducts';
 import { RecentlyAdded } from '../components/home/RecentlyAdded';
 import { MarketplaceBenefits } from '../components/home/MarketplaceBenefits';
 import { BecomeLender } from '../components/home/BecomeLender';
+import { HomeTeamSpotlight } from '../components/home/HomeTeamSpotlight';
 import { CitySelectorModal } from '../components/location/CitySelectorModal';
 
 export interface HomePageProps {
@@ -169,6 +170,9 @@ export const HomePage: React.FC<HomePageProps> = ({
 
       {/* 4. How BorrowBox Works + 5. Benefits of Renting + 6. Benefits of Listing Items */}
       <MarketplaceBenefits onNavigate={onNavigate} />
+
+      {/* Meet the BorroowBox Team Section */}
+      <HomeTeamSpotlight onNavigate={onNavigate} />
 
       {/* 7. Become a Lender CTA */}
       <BecomeLender

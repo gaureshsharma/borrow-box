@@ -491,6 +491,32 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
 
                       <button
                         type="button"
+                        onClick={() => handleMobileNavigate({ page: 'team' })}
+                        className={`w-full min-h-[44px] text-left px-3 py-2.5 rounded-xl text-sm font-medium flex items-center gap-3 bb-btn-interactive cursor-pointer ${
+                          currentRoute.page === 'team'
+                            ? 'bg-[#1D293B] text-[#F8FAFC]'
+                            : 'text-[#F8FAFC] hover:bg-[#161E2E]'
+                        }`}
+                      >
+                        <Users className="w-4 h-4 text-[#8B5CF6] shrink-0" />
+                        <span>Our Team</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleMobileNavigate({ page: 'about' })}
+                        className={`w-full min-h-[44px] text-left px-3 py-2.5 rounded-xl text-sm font-medium flex items-center gap-3 bb-btn-interactive cursor-pointer ${
+                          currentRoute.page === 'about'
+                            ? 'bg-[#1D293B] text-[#F8FAFC]'
+                            : 'text-[#F8FAFC] hover:bg-[#161E2E]'
+                        }`}
+                      >
+                        <Info className="w-4 h-4 text-[#8B5CF6] shrink-0" />
+                        <span>About Us</span>
+                      </button>
+
+                      <button
+                        type="button"
                         onClick={() => {
                           setMenuOpen(false);
                           setIsCityModalOpen(true);

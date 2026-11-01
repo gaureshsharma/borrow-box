@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { TeamMember } from '../../data/teamMembers';
 import { resolveAssetPath } from '../../utils/introAnimation';
+import { getTeamMemberPhoto } from '../../assets/teamImageRegistry';
 
 export interface TeamPortraitProps {
   member: TeamMember;
@@ -23,25 +24,25 @@ export const TeamPortrait: React.FC<TeamPortraitProps> = ({
   imageClassName = '',
   priority = false,
 }) => {
-  const [currentSrc, setCurrentSrc] = useState<string>(() => resolveAssetPath(member.image));
+  const initialSrc = getTeamMemberPhoto(member.id, resolveAssetPath(member.image));
+  const [currentSrc, setCurrentSrc] = useState<string>(initialSrc);
   const [triedFallback, setTriedFallback] = useState(false);
   const [hasFailedAll, setHasFailedAll] = useState(false);
 
   useEffect(() => {
-    setCurrentSrc(resolveAssetPath(member.image));
+    setCurrentSrc(getTeamMemberPhoto(member.id, resolveAssetPath(member.image)));
     setTriedFallback(false);
     setHasFailedAll(false);
-  }, [member.image]);
+  }, [member.id, member.image]);
 
   const handleImageError = () => {
-    if (
-      !triedFallback &&
-      member.fallbackImage &&
-      resolveAssetPath(member.fallbackImage) !== currentSrc
-    ) {
-      setTriedFallback(true);
-      setCurrentSrc(resolveAssetPath(member.fallbackImage));
-      return;
+    if (!triedFallback && member.fallbackImage) {
+      const fb = resolveAssetPath(member.fallbackImage);
+      if (fb !== currentSrc) {
+        setTriedFallback(true);
+        setCurrentSrc(fb);
+        return;
+      }
     }
     setHasFailedAll(true);
   };

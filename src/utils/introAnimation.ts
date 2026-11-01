@@ -12,7 +12,13 @@ export const BORROWBOX_TRANSPARENT_SYMBOL_ASSET_PATH =
  */
 export function resolveAssetPath(assetPath: string): string {
   if (assetPath.startsWith('/')) {
-    const base = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || './';
+    if (typeof window !== 'undefined' && (window.location.hostname.endsWith('github.io') || window.location.pathname.startsWith('/borrow-box'))) {
+      return `/borrow-box${assetPath}`;
+    }
+    const base = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/';
+    if (base === './') {
+      return assetPath;
+    }
     const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
     return `${cleanBase}${assetPath}`;
   }

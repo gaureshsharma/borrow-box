@@ -112,8 +112,26 @@ import {
 } from './services/supportTicketService';
 
 function parseUrlToRoute(pathname: string, search: string): PageRoute {
+  let cleanPath = pathname;
+  if (typeof window !== 'undefined' && window.location.hash) {
+    const rawHash = window.location.hash.replace(/^#\/?/, '/');
+    if (rawHash && rawHash !== '/') {
+      cleanPath = rawHash;
+    }
+  }
+
+  // Strip GitHub Pages repository prefix if present (/borrow-box)
+  if (cleanPath.startsWith('/borrow-box')) {
+    cleanPath = cleanPath.replace(/^\/borrow-box/, '') || '/';
+  }
+
+  // Clean trailing slash
+  if (cleanPath.length > 1 && cleanPath.endsWith('/')) {
+    cleanPath = cleanPath.slice(0, -1);
+  }
+
   const params = new URLSearchParams(search);
-  if (pathname === '/browse') {
+  if (cleanPath === '/browse') {
     return {
       page: 'browse',
       category: params.get('category') || undefined,
@@ -121,77 +139,62 @@ function parseUrlToRoute(pathname: string, search: string): PageRoute {
       city: params.get('city') || undefined,
     };
   }
-  if (pathname.startsWith('/items/')) {
-    const itemId = pathname.replace('/items/', '').trim();
+  if (cleanPath.startsWith('/items/')) {
+    const itemId = cleanPath.replace('/items/', '').trim();
     if (itemId) {
       return { page: 'details', itemId };
     }
   }
-  if (pathname === '/list-item') {
+  if (cleanPath === '/list-item') {
     return { page: 'list-item' };
   }
-  if (pathname === '/dashboard') {
+  if (cleanPath === '/dashboard') {
     return { page: 'dashboard' };
   }
-  if (pathname === '/profile') {
+  if (cleanPath === '/profile') {
     return { page: 'profile' };
   }
-  if (pathname === '/login') {
+  if (cleanPath === '/login') {
     return { page: 'login' };
   }
-  if (pathname === '/signup') {
+  if (cleanPath === '/signup') {
     return { page: 'signup' };
   }
-  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+  if (cleanPath === '/admin' || cleanPath.startsWith('/admin/')) {
     return { page: 'admin' };
   }
-  if (pathname === '/support' || pathname.startsWith('/support/')) {
+  if (cleanPath === '/support' || cleanPath.startsWith('/support/')) {
     const ticketId = params.get('ticket') || undefined;
     return { page: 'support', ticketId };
   }
-  if (pathname === '/about' || pathname === '/about/') {
+  if (cleanPath === '/about') {
     return { page: 'about' };
   }
-  if (
-    pathname === '/team' ||
-    pathname === '/team/' ||
-    pathname === '/our-team' ||
-    pathname === '/our-team/'
-  ) {
+  if (cleanPath === '/team' || cleanPath === '/our-team') {
     return { page: 'team' };
   }
-  if (
-    pathname === '/how-it-works' ||
-    pathname === '/how-it-works/' ||
-    pathname === '/howitworks'
-  ) {
+  if (cleanPath === '/how-it-works' || cleanPath === '/howitworks') {
     return { page: 'how-it-works' };
   }
-  if (
-    pathname === '/contact' ||
-    pathname === '/contact/' ||
-    pathname === '/contact-us'
-  ) {
+  if (cleanPath === '/contact' || cleanPath === '/contact-us') {
     return { page: 'contact' };
   }
-  if (
-    pathname === '/terms' ||
-    pathname === '/terms/' ||
-    pathname === '/terms-and-conditions'
-  ) {
+  if (cleanPath === '/terms' || cleanPath === '/terms-and-conditions') {
     return { page: 'terms' };
   }
-  if (
-    pathname === '/privacy' ||
-    pathname === '/privacy/' ||
-    pathname === '/privacy-policy'
-  ) {
+  if (cleanPath === '/privacy' || cleanPath === '/privacy-policy') {
     return { page: 'privacy' };
   }
   return { page: 'home' };
 }
 
 function routeToUrl(route: PageRoute): string {
+  const isGhPages =
+    typeof window !== 'undefined' &&
+    (window.location.hostname.endsWith('github.io') ||
+      window.location.pathname.startsWith('/borrow-box'));
+
+  let path = '/';
   switch (route.page) {
     case 'browse': {
       const params = new URLSearchParams();
@@ -205,42 +208,63 @@ function routeToUrl(route: PageRoute): string {
         params.set('city', route.city);
       }
       const qs = params.toString();
-      return qs ? `/browse?${qs}` : '/browse';
+      path = qs ? `/browse?${qs}` : '/browse';
+      break;
     }
     case 'details':
-      return `/items/${route.itemId}`;
+      path = `/items/${route.itemId}`;
+      break;
     case 'list-item':
-      return '/list-item';
+      path = '/list-item';
+      break;
     case 'dashboard':
-      return '/dashboard';
+      path = '/dashboard';
+      break;
     case 'profile':
-      return '/profile';
+      path = '/profile';
+      break;
     case 'login':
-      return '/login';
+      path = '/login';
+      break;
     case 'signup':
-      return '/signup';
+      path = '/signup';
+      break;
     case 'admin':
-      return '/admin';
+      path = '/admin';
+      break;
     case 'support':
-      return route.ticketId
+      path = route.ticketId
         ? `/support?ticket=${encodeURIComponent(route.ticketId)}`
         : '/support';
+      break;
     case 'about':
-      return '/about';
+      path = '/about';
+      break;
     case 'team':
-      return '/team';
+      path = '/team';
+      break;
     case 'how-it-works':
-      return '/how-it-works';
+      path = '/how-it-works';
+      break;
     case 'contact':
-      return '/contact';
+      path = '/contact';
+      break;
     case 'terms':
-      return '/terms';
+      path = '/terms';
+      break;
     case 'privacy':
-      return '/privacy';
+      path = '/privacy';
+      break;
     case 'home':
     default:
-      return '/';
+      path = '/';
+      break;
   }
+
+  if (isGhPages) {
+    return path === '/' ? '/borrow-box/' : `/borrow-box/#${path}`;
+  }
+  return path;
 }
 
 export default function App() {
@@ -506,7 +530,7 @@ export default function App() {
     };
   }, [userProfile?.uid]);
 
-  // Sync browse filters if browser back/forward buttons are used
+  // Sync browse filters if browser back/forward buttons or hash change are used
   useEffect(() => {
     const handlePopState = () => {
       const parsed = parseUrlToRoute(
@@ -521,7 +545,11 @@ export default function App() {
       }
     };
     window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('hashchange', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('hashchange', handlePopState);
+    };
   }, []);
 
   const handleNavigate = (route: PageRoute) => {
