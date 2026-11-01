@@ -1,12 +1,15 @@
 import { initializeApp } from 'firebase/app';
 import {
+  ConfirmationResult,
   GoogleAuthProvider,
+  RecaptchaVerifier,
   User,
   createUserWithEmailAndPassword,
   getAuth,
   onAuthStateChanged,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signInWithPhoneNumber,
   signInWithPopup,
   signOut,
   updateProfile,
@@ -1320,100 +1323,70 @@ export async function signInWithGooglePopup(): Promise<BorrowBoxUserProfile> {
     if (raw.includes('auth/popup-closed-by-user')) {
       throw err;
     }
-    // Seamless fallback for GitHub Pages, unauthorized domain, or restricted API key
-    const googleUserEmail = 'gaureshsharma@gmail.com';
-    const deterministicUid = 'usr_google_gaureshsharma';
-    const pseudoUser = {
-      uid: deterministicUid,
-      email: googleUserEmail,
-      displayName: 'Gauresh Sharma',
-      photoURL:
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-    } as unknown as User;
-    const profile = await ensureOrLoadUserProfile(pseudoUser, {
-      fullName: 'Gauresh Sharma',
-      phone: '9876543210',
-      city: 'Bengaluru',
-      neighborhood: 'Indiranagar',
-      photoURL:
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-    });
-    writeLocalJson('borrowbox_active_session_v1', profile);
-    saveLocalRegisteredAccount(googleUserEmail, 'google_sso_verified', profile);
-    return profile;
+    if (raw.includes('auth/popup-blocked')) {
+      throw new Error('Google Sign-In popup was blocked by your browser. Please allow popups for this site.');
+    }
+    throw err;
   }
 }
 
-export async function signInWithDemoAccount(
-  type: 'renter' | 'owner' | 'admin'
+let activeRecaptchaVerifier: RecaptchaVerifier | null = null;
+
+export function setupPhoneRecaptcha(containerId: string): RecaptchaVerifier {
+  if (typeof window === 'undefined') {
+    throw new Error('reCAPTCHA can only be initialized in the browser.');
+  }
+  if (activeRecaptchaVerifier) {
+    try {
+      activeRecaptchaVerifier.clear();
+    } catch {
+      // ignore
+    }
+    activeRecaptchaVerifier = null;
+  }
+  activeRecaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
+    size: 'invisible',
+    callback: () => {
+      // reCAPTCHA solved
+    },
+    'expired-callback': () => {
+      // reCAPTCHA expired
+    },
+  });
+  return activeRecaptchaVerifier;
+}
+export type { ConfirmationResult };
+
+export async function sendPhoneOtp(
+  phoneNumber: string,
+  appVerifier: RecaptchaVerifier
+): Promise<ConfirmationResult> {
+  const confirmationResult = await signInWithPhoneNumber(
+    auth,
+    phoneNumber,
+    appVerifier
+  );
+  return confirmationResult;
+}
+
+export async function verifyPhoneOtpAndLogin(
+  confirmationResult: ConfirmationResult,
+  otpCode: string,
+  extraData?: {
+    fullName?: string;
+    city?: IndianCity;
+    neighborhood?: string;
+  }
 ): Promise<BorrowBoxUserProfile> {
-  const now = new Date().toISOString();
-  if (type === 'admin') {
-    const adminEmail = 'gaureshsharma@gmail.com';
-    const profile: BorrowBoxUserProfile = {
-      uid: 'usr_admin_gaureshsharma',
-      name: 'Gauresh Sharma (Super Admin)',
-      email: adminEmail,
-      phone: '+91 98765 43210',
-      photoURL:
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-      city: 'Bengaluru',
-      neighborhood: 'Indiranagar',
-      canRent: true,
-      canList: true,
-      activeMode: 'renter',
-      createdAtISO: now,
-      updatedAtISO: now,
-      isAdmin: true,
-    };
-    writeLocalJson('borrowbox_active_session_v1', profile);
-    saveLocalRegisteredAccount(adminEmail, 'demo123456', profile);
-    return profile;
-  }
-
-  if (type === 'owner') {
-    const ownerEmail = 'rahul.verma@borrowbox.in';
-    const profile: BorrowBoxUserProfile = {
-      uid: 'usr_owner_rahul_verma',
-      name: 'Rahul Verma (Equipment Lender)',
-      email: ownerEmail,
-      phone: '+91 98200 12345',
-      photoURL:
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
-      city: 'Mumbai',
-      neighborhood: 'Bandra West',
-      canRent: true,
-      canList: true,
-      activeMode: 'owner',
-      createdAtISO: now,
-      updatedAtISO: now,
-      isAdmin: false,
-    };
-    writeLocalJson('borrowbox_active_session_v1', profile);
-    saveLocalRegisteredAccount(ownerEmail, 'demo123456', profile);
-    return profile;
-  }
-
-  // Default: Verified Renter
-  const renterEmail = 'priya.sharma@borrowbox.in';
-  const profile: BorrowBoxUserProfile = {
-    uid: 'usr_renter_priya_sharma',
-    name: 'Priya Sharma (Verified Renter)',
-    email: renterEmail,
-    phone: '+91 98111 22334',
-    photoURL:
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80',
-    city: 'Bengaluru',
-    neighborhood: 'Koramangala',
-    canRent: true,
-    canList: true,
-    activeMode: 'renter',
-    createdAtISO: now,
-    updatedAtISO: now,
-    isAdmin: false,
-  };
+  const userCredential = await confirmationResult.confirm(otpCode);
+  const user = userCredential.user;
+  const profile = await ensureOrLoadUserProfile(user, {
+    fullName: extraData?.fullName || user.displayName || 'BorrowBox Member',
+    phone: user.phoneNumber || '',
+    city: extraData?.city || 'Bengaluru',
+    neighborhood: extraData?.neighborhood || 'Indiranagar',
+  });
   writeLocalJson('borrowbox_active_session_v1', profile);
-  saveLocalRegisteredAccount(renterEmail, 'demo123456', profile);
   return profile;
 }
 
