@@ -1,0 +1,998 @@
+{
+  "entities": {
+    "UserPublicProfile": {
+      "title": "UserPublicProfile",
+      "description": "Publicly visible marketplace profile for a BorrowBox user who can act as both renter and owner.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Unique Firebase Auth user ID matching the document ID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the user.",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "Profile avatar URL or generated initials URL.",
+          "minLength": 0,
+          "maxLength": 500
+        },
+        "city": {
+          "type": "string",
+          "description": "Primary Indian city or town across all 28 states and 8 union territories for rentals and listings.",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "neighborhood": {
+          "type": "string",
+          "description": "Locality or neighborhood within the city.",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "canRent": {
+          "type": "boolean",
+          "description": "Indicates the user can borrow/rent items on BorrowBox."
+        },
+        "canList": {
+          "type": "boolean",
+          "description": "Indicates the user can list/own items for rent on BorrowBox."
+        },
+        "activeMode": {
+          "type": "string",
+          "description": "Current workspace perspective selected by the user.",
+          "enum": ["renter", "owner"],
+          "minLength": 5,
+          "maxLength": 10
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Immutable account creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last profile update timestamp."
+        }
+      },
+      "required": [
+        "uid",
+        "name",
+        "photoURL",
+        "city",
+        "neighborhood",
+        "canRent",
+        "canList",
+        "activeMode",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserPrivateProfile": {
+      "title": "UserPrivateProfile",
+      "description": "Strictly isolated PII document containing email, phone number, and private identity verification metadata.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Unique Firebase Auth user ID matching parent userId.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Private email address of the user.",
+          "minLength": 5,
+          "maxLength": 120
+        },
+        "phone": {
+          "type": "string",
+          "description": "Private Indian mobile phone number.",
+          "minLength": 0,
+          "maxLength": 20
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Immutable record creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last private record update timestamp."
+        }
+      },
+      "required": ["uid", "email", "phone", "createdAt", "updatedAt"]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Role-based administrator registry document keyed by lowercase Gmail or UID.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "uid": {
+          "type": "string",
+          "description": "Admin user UID or pending invite identifier.",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Verified administrator Gmail address.",
+          "minLength": 5,
+          "maxLength": 120
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "role": {
+          "type": "string",
+          "enum": ["super_admin", "admin", "moderator", "support_admin"],
+          "minLength": 5,
+          "maxLength": 20
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "deactivated"],
+          "minLength": 6,
+          "maxLength": 15
+        },
+        "customPermissions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "revokedPermissions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "grantedBy": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "grantedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastLoginAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "uid",
+        "email",
+        "name",
+        "role",
+        "status",
+        "customPermissions",
+        "revokedPermissions",
+        "grantedBy",
+        "grantedAt",
+        "lastLoginAt",
+        "updatedAt"
+      ]
+    },
+    "MarketplaceListing": {
+      "title": "MarketplaceListing",
+      "description": "User-created peer-to-peer rental listing with pricing in INR, deposit, availability window, and status.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "title": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 140
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "Electronics",
+            "Photography",
+            "Gaming",
+            "Tools",
+            "Events",
+            "Outdoor",
+            "Education",
+            "Musical Instruments"
+          ],
+          "minLength": 4,
+          "maxLength": 30
+        },
+        "condition": {
+          "type": "string",
+          "enum": ["Like New", "Excellent", "Good"],
+          "minLength": 4,
+          "maxLength": 15
+        },
+        "dailyPriceINR": {
+          "type": "integer",
+          "description": "Daily rental rate in Indian Rupees."
+        },
+        "refundableDepositINR": {
+          "type": "integer",
+          "description": "Refundable security deposit in Indian Rupees."
+        },
+        "replacementValueINR": {
+          "type": "integer",
+          "description": "Approximate retail replacement price in Indian Rupees."
+        },
+        "city": {
+          "type": "string",
+          "description": "Recognised Indian city or town across all 28 states and 8 union territories.",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "neighborhood": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "pickupLocation": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 200
+        },
+        "description": {
+          "type": "string",
+          "minLength": 20,
+          "maxLength": 2000
+        },
+        "imageUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 350000
+        },
+        "availableFrom": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10
+        },
+        "availableTo": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10
+        },
+        "minRentalDays": {
+          "type": "integer"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "archived"],
+          "minLength": 6,
+          "maxLength": 10
+        },
+        "cancellationPolicy": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 80
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "ownerId",
+        "ownerName",
+        "title",
+        "category",
+        "condition",
+        "dailyPriceINR",
+        "refundableDepositINR",
+        "replacementValueINR",
+        "city",
+        "neighborhood",
+        "pickupLocation",
+        "description",
+        "imageUrl",
+        "availableFrom",
+        "availableTo",
+        "minRentalDays",
+        "status",
+        "cancellationPolicy",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "RentalBooking": {
+      "title": "RentalBooking",
+      "description": "Auditable rental reservation linking borrower, item owner, dates, deposit status, QR handover code, and condition logs.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "listingId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "listingTitle": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 140
+        },
+        "listingCity": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 40
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "borrowerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "borrowerName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "startDate": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10
+        },
+        "endDate": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10
+        },
+        "days": {
+          "type": "integer"
+        },
+        "dailyRateINR": {
+          "type": "integer"
+        },
+        "netRentalCostINR": {
+          "type": "integer"
+        },
+        "refundableDepositINR": {
+          "type": "integer"
+        },
+        "totalUpfrontINR": {
+          "type": "integer"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "accepted",
+            "rejected",
+            "cancelled",
+            "picked_up",
+            "returned",
+            "completed",
+            "disputed"
+          ],
+          "minLength": 6,
+          "maxLength": 15
+        },
+        "depositStatus": {
+          "type": "string",
+          "enum": ["pending_pickup", "held_at_pickup", "refunded", "disputed"],
+          "minLength": 8,
+          "maxLength": 20
+        },
+        "handoverCode": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 32
+        },
+        "pickupConditionNote": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 500
+        },
+        "pickupPhotoUrl": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 350000
+        },
+        "returnConditionNote": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 500
+        },
+        "returnPhotoUrl": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 350000
+        },
+        "disputeReason": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "listingId",
+        "listingTitle",
+        "listingCity",
+        "ownerId",
+        "ownerName",
+        "borrowerId",
+        "borrowerName",
+        "startDate",
+        "endDate",
+        "days",
+        "dailyRateINR",
+        "netRentalCostINR",
+        "refundableDepositINR",
+        "totalUpfrontINR",
+        "status",
+        "depositStatus",
+        "handoverCode",
+        "pickupConditionNote",
+        "pickupPhotoUrl",
+        "returnConditionNote",
+        "returnPhotoUrl",
+        "disputeReason",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "BookingMessage": {
+      "title": "BookingMessage",
+      "description": "Private message inside a rental booking conversation between the borrower and owner.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "bookingId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "senderId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "senderName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "borrowerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "bookingId",
+        "senderId",
+        "senderName",
+        "borrowerId",
+        "ownerId",
+        "text",
+        "createdAt"
+      ]
+    },
+    "RentalReview": {
+      "title": "RentalReview",
+      "description": "Verified review linked strictly to a completed or returned rental booking.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "bookingId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "listingId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "reviewerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "reviewerName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "revieweeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "rating": {
+          "type": "integer"
+        },
+        "comment": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 600
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "bookingId",
+        "listingId",
+        "reviewerId",
+        "reviewerName",
+        "revieweeId",
+        "rating",
+        "comment",
+        "createdAt"
+      ]
+    },
+    "UserModeration": {
+      "title": "UserModeration",
+      "description": "Administrative user status and suspension record.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "status": { "type": "string", "enum": ["active", "suspended", "deleted"] },
+        "reason": { "type": "string", "minLength": 0, "maxLength": 500 },
+        "updatedByEmail": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "status", "reason", "updatedByEmail", "updatedAt"]
+    },
+    "ListingModeration": {
+      "title": "ListingModeration",
+      "description": "Administrative product listing approval, rejection, or flag status.",
+      "type": "object",
+      "properties": {
+        "listingId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "moderationStatus": { "type": "string", "enum": ["pending", "approved", "rejected", "flagged"] },
+        "reason": { "type": "string", "minLength": 0, "maxLength": 500 },
+        "reviewedByEmail": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "reviewedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["listingId", "moderationStatus", "reason", "reviewedByEmail", "reviewedAt"]
+    },
+    "PlatformReport": {
+      "title": "PlatformReport",
+      "description": "Reported listing, user, or booking complaint.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "targetType": { "type": "string", "enum": ["listing", "user", "booking"] },
+        "targetId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "targetTitle": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "reporterId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "reporterName": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "reason": { "type": "string", "minLength": 5, "maxLength": 800 },
+        "category": { "type": "string", "enum": ["fraud_scam", "damaged_item", "prohibited_item", "no_show", "abusive_behavior", "other"] },
+        "severity": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "status": { "type": "string", "enum": ["open", "investigating", "resolved", "dismissed"] },
+        "resolutionNote": { "type": "string", "minLength": 0, "maxLength": 800 },
+        "assignedAdminEmail": { "type": "string", "minLength": 0, "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "targetType",
+        "targetId",
+        "targetTitle",
+        "reporterId",
+        "reporterName",
+        "reason",
+        "category",
+        "severity",
+        "status",
+        "resolutionNote",
+        "assignedAdminEmail",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SupportTicket": {
+      "title": "SupportTicket",
+      "description": "Customer support ticket and internal support admin resolution notes.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "userName": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "userEmail": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "bookingId": { "type": "string", "minLength": 0, "maxLength": 128 },
+        "subject": { "type": "string", "minLength": 3, "maxLength": 160 },
+        "description": { "type": "string", "minLength": 5, "maxLength": 1200 },
+        "priority": { "type": "string", "enum": ["low", "medium", "high", "urgent"] },
+        "status": { "type": "string", "enum": ["open", "in_progress", "resolved", "closed"] },
+        "internalNotes": { "type": "string", "minLength": 0, "maxLength": 2000 },
+        "assignedToEmail": { "type": "string", "minLength": 0, "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "userId",
+        "userName",
+        "userEmail",
+        "bookingId",
+        "subject",
+        "description",
+        "status",
+        "internalNotes",
+        "assignedToEmail",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AdminAuditLog": {
+      "title": "AdminAuditLog",
+      "description": "Immutable append-only administrative activity log entry.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "adminId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "adminEmail": { "type": "string", "minLength": 5, "maxLength": 120 },
+        "adminRole": { "type": "string", "enum": ["super_admin", "admin", "moderator", "support_admin"] },
+        "action": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "targetType": { "type": "string", "enum": ["user", "product", "booking", "report", "support_ticket", "admin", "settings"] },
+        "targetId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "targetLabel": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "previousValue": { "type": "string", "minLength": 0, "maxLength": 1000 },
+        "newValue": { "type": "string", "minLength": 0, "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "adminId",
+        "adminEmail",
+        "adminRole",
+        "action",
+        "targetType",
+        "targetId",
+        "targetLabel",
+        "previousValue",
+        "newValue",
+        "createdAt"
+      ]
+    },
+    "PlatformSettings": {
+      "title": "PlatformSettings",
+      "description": "Global platform configuration managed by Super Admins.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "enum": ["global"] },
+        "platformFeePercent": { "type": "integer" },
+        "minDepositINR": { "type": "integer" },
+        "requireListingApproval": { "type": "boolean" },
+        "maintenanceMode": { "type": "boolean" },
+        "autoFlagHighValueThresholdINR": { "type": "integer" },
+        "supportEscalationEmail": { "type": "string", "minLength": 5, "maxLength": 120 },
+        "updatedByEmail": { "type": "string", "minLength": 5, "maxLength": 120 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "platformFeePercent",
+        "minDepositINR",
+        "requireListingApproval",
+        "maintenanceMode",
+        "autoFlagHighValueThresholdINR",
+        "supportEscalationEmail",
+        "updatedByEmail",
+        "updatedAt"
+      ]
+    },
+    "SupportTicketV2": {
+      "title": "SupportTicketV2",
+      "description": "Complete BorrowBox support ticket with staff claiming and resolution tracking.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "ticketNumber": { "type": "string", "minLength": 5, "maxLength": 40 },
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "userName": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "userEmail": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "subject": { "type": "string", "minLength": 3, "maxLength": 160 },
+        "description": { "type": "string", "minLength": 5, "maxLength": 2500 },
+        "category": {
+          "type": "string",
+          "enum": [
+            "Payment & Deposit",
+            "Booking & Handover",
+            "Item Condition & Damage",
+            "Account & Verification",
+            "Safety & Trust",
+            "General Enquiry"
+          ]
+        },
+        "priority": { "type": "string", "enum": ["normal", "urgent"] },
+        "status": {
+          "type": "string",
+          "enum": ["open", "in_progress", "waiting_for_user", "resolved", "closed"]
+        },
+        "assignedTo": { "type": "string", "minLength": 0, "maxLength": 128 },
+        "assignedStaffName": { "type": "string", "minLength": 0, "maxLength": 80 },
+        "assignedStaffEmail": { "type": "string", "minLength": 0, "maxLength": 120 },
+        "claimedAt": { "type": "string", "minLength": 0, "maxLength": 64 },
+        "firstResponseAt": { "type": "string", "minLength": 0, "maxLength": 64 },
+        "relatedBookingId": { "type": "string", "minLength": 0, "maxLength": 128 },
+        "relatedProductId": { "type": "string", "minLength": 0, "maxLength": 128 },
+        "attachments": { "type": "string", "minLength": 0, "maxLength": 450000 },
+        "resolutionSummary": { "type": "string", "minLength": 0, "maxLength": 2000 },
+        "internalNotes": { "type": "string", "minLength": 0, "maxLength": 3000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "resolvedAt": { "type": "string", "minLength": 0, "maxLength": 64 },
+        "closedAt": { "type": "string", "minLength": 0, "maxLength": 64 }
+      },
+      "required": [
+        "id",
+        "ticketNumber",
+        "userId",
+        "userName",
+        "userEmail",
+        "subject",
+        "description",
+        "category",
+        "status",
+        "assignedStaffName",
+        "assignedStaffEmail",
+        "relatedBookingId",
+        "relatedProductId",
+        "resolutionSummary",
+        "internalNotes",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SupportTicketMessage": {
+      "title": "SupportTicketMessage",
+      "description": "Message or private staff internal note inside a support ticket conversation.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "ticketId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "senderId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "senderName": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "senderRole": { "type": "string", "enum": ["customer", "staff", "admin"] },
+        "message": { "type": "string", "minLength": 1, "maxLength": 2500 },
+        "isInternal": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "ticketId",
+        "senderId",
+        "senderName",
+        "senderRole",
+        "message",
+        "isInternal",
+        "createdAt"
+      ]
+    },
+    "SupportTicketHistory": {
+      "title": "SupportTicketHistory",
+      "description": "Audit trail entry for a support ticket action.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "ticketId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "actorId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "actorName": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "actorEmail": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "actorRole": { "type": "string", "enum": ["customer", "staff", "admin"] },
+        "action": { "type": "string", "minLength": 2, "maxLength": 64 },
+        "summary": { "type": "string", "minLength": 2, "maxLength": 600 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "ticketId",
+        "actorId",
+        "actorName",
+        "actorEmail",
+        "actorRole",
+        "action",
+        "summary",
+        "createdAt"
+      ]
+    },
+    "SupportNotification": {
+      "title": "SupportNotification",
+      "description": "In-app notification for support ticket events.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "recipientUid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "recipientRole": { "type": "string", "enum": ["customer", "staff"] },
+        "type": { "type": "string", "minLength": 2, "maxLength": 64 },
+        "ticketId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "ticketNumber": { "type": "string", "minLength": 3, "maxLength": 40 },
+        "title": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "body": { "type": "string", "minLength": 2, "maxLength": 500 },
+        "resolutionSummary": { "type": "string", "minLength": 0, "maxLength": 2000 },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "recipientUid",
+        "recipientRole",
+        "ticketId",
+        "ticketNumber",
+        "title",
+        "body",
+        "read",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserPublicProfile" },
+      "description": "Public user profiles containing non-PII display attributes and dual renter/owner flags."
+    },
+    "/users/{userId}/private/{docId}": {
+      "schema": { "$ref": "#/entities/UserPrivateProfile" },
+      "description": "Isolated private user profile data (email, phone) accessible only to the profile owner or administrators."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminRecord" },
+      "description": "Dedicated RBAC administrator registry kept strictly separate from standard user profiles."
+    },
+    "/listings/{listingId}": {
+      "schema": { "$ref": "#/entities/MarketplaceListing" },
+      "description": "User-published peer-to-peer rental listings."
+    },
+    "/bookings/{bookingId}": {
+      "schema": { "$ref": "#/entities/RentalBooking" },
+      "description": "Auditable rental bookings between borrowers and owners."
+    },
+    "/bookings/{bookingId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/BookingMessage" },
+      "description": "Private handover coordination messages between the booking borrower and owner."
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/RentalReview" },
+      "description": "Verified reviews linked strictly to completed rental bookings."
+    },
+    "/user_moderation/{userId}": {
+      "schema": { "$ref": "#/entities/UserModeration" },
+      "description": "Administrative user suspension and moderation records."
+    },
+    "/listing_moderation/{listingId}": {
+      "schema": { "$ref": "#/entities/ListingModeration" },
+      "description": "Administrative listing approval, rejection, and flag status records."
+    },
+    "/reports/{reportId}": {
+      "schema": { "$ref": "#/entities/PlatformReport" },
+      "description": "Reported listings, users, and booking complaints."
+    },
+    "/support_tickets/{ticketId}": {
+      "schema": { "$ref": "#/entities/SupportTicket" },
+      "description": "Legacy customer support tickets collection."
+    },
+    "/supportTickets/{ticketId}": {
+      "schema": { "$ref": "#/entities/SupportTicketV2" },
+      "description": "Primary BorrowBox support tickets collection with claiming, priority, and resolution tracking."
+    },
+    "/supportTickets/{ticketId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/SupportTicketMessage" },
+      "description": "Conversation messages and internal notes for a support ticket."
+    },
+    "/supportTickets/{ticketId}/history/{eventId}": {
+      "schema": { "$ref": "#/entities/SupportTicketHistory" },
+      "description": "Audit history of events on a support ticket."
+    },
+    "/supportNotifications/{notifId}": {
+      "schema": { "$ref": "#/entities/SupportNotification" },
+      "description": "In-app notifications for customers and support staff."
+    },
+    "/audit_logs/{logId}": {
+      "schema": { "$ref": "#/entities/AdminAuditLog" },
+      "description": "Immutable append-only administrative activity logs."
+    },
+    "/platform_settings/{settingId}": {
+      "schema": { "$ref": "#/entities/PlatformSettings" },
+      "description": "Global platform configuration settings."
+    }
+  }
+}

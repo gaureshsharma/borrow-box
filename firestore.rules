@@ -1,0 +1,1308 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Hardened Global Helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidAdminKey(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_.@\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Separate Administrator Verification (Never trusts unverified email or user-editable profile fields)
+    function isSuperAdmin() {
+      return isSignedIn() && request.auth.token.email_verified == true && (
+        request.auth.token.email == 'marukrutarth@gmail.com' ||
+        request.auth.token.email == 'marginoferror1626@gmail.com' ||
+        (
+          exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.status == 'active' &&
+          get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'super_admin'
+        ) ||
+        (
+          request.auth.token.email != null &&
+          exists(/databases/$(database)/documents/admins/$(request.auth.token.email)) &&
+          get(/databases/$(database)/documents/admins/$(request.auth.token.email)).data.status == 'active' &&
+          get(/databases/$(database)/documents/admins/$(request.auth.token.email)).data.role == 'super_admin'
+        )
+      );
+    }
+
+    function isOverrideAdmin() {
+      return isSignedIn() && request.auth.token.email_verified == true && (
+        isSuperAdmin() ||
+        request.auth.token.email == 'marginoferror1626@gmail.com' ||
+        (
+          exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.status == 'active' &&
+          get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role in ['super_admin', 'admin']
+        ) ||
+        (
+          request.auth.token.email != null &&
+          exists(/databases/$(database)/documents/admins/$(request.auth.token.email)) &&
+          get(/databases/$(database)/documents/admins/$(request.auth.token.email)).data.status == 'active' &&
+          get(/databases/$(database)/documents/admins/$(request.auth.token.email)).data.role in ['super_admin', 'admin']
+        )
+      );
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        isOverrideAdmin() ||
+        (
+          exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.status == 'active'
+        ) ||
+        (
+          request.auth.token.email_verified == true &&
+          request.auth.token.email != null &&
+          exists(/databases/$(database)/documents/admins/$(request.auth.token.email)) &&
+          get(/databases/$(database)/documents/admins/$(request.auth.token.email)).data.status == 'active'
+        )
+      );
+    }
+
+    // 3. Entity Validation Blueprints
+    function isValidUserPublicProfile(data, userId) {
+      return data.keys().hasAll([
+          'uid',
+          'name',
+          'photoURL',
+          'city',
+          'neighborhood',
+          'canRent',
+          'canList',
+          'activeMode',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid',
+          'name',
+          'photoURL',
+          'city',
+          'neighborhood',
+          'canRent',
+          'canList',
+          'activeMode',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.uid is string
+        && data.uid.size() >= 1
+        && data.uid.size() <= 128
+        && data.uid.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.uid == userId
+        && (data.uid == request.auth.uid || isAdmin())
+        && data.name is string
+        && data.name.size() >= 2
+        && data.name.size() <= 80
+        && data.photoURL is string
+        && data.photoURL.size() <= 500
+        && data.city is string
+        && data.city.size() >= 2
+        && data.city.size() <= 60
+        && data.neighborhood is string
+        && data.neighborhood.size() >= 2
+        && data.neighborhood.size() <= 80
+        && data.canRent is bool
+        && data.canList is bool
+        && data.activeMode is string
+        && data.activeMode.size() >= 5
+        && data.activeMode.size() <= 10
+        && data.activeMode in ['renter', 'owner']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidUserPrivateProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'email', 'phone', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'email', 'phone', 'createdAt', 'updatedAt'])
+        && data.uid is string
+        && data.uid.size() >= 1
+        && data.uid.size() <= 128
+        && data.uid.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.uid == userId
+        && (data.uid == request.auth.uid || isAdmin())
+        && data.email is string
+        && data.email.size() >= 5
+        && data.email.size() <= 120
+        && data.phone is string
+        && data.phone.size() <= 20
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAdminRecord(data, adminId) {
+      return data.keys().hasAll([
+          'id',
+          'uid',
+          'email',
+          'name',
+          'role',
+          'status',
+          'customPermissions',
+          'revokedPermissions',
+          'grantedBy',
+          'grantedAt',
+          'lastLoginAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id',
+          'uid',
+          'email',
+          'name',
+          'role',
+          'status',
+          'customPermissions',
+          'revokedPermissions',
+          'grantedBy',
+          'grantedAt',
+          'lastLoginAt',
+          'updatedAt'
+        ])
+        && data.id is string
+        && data.id == adminId
+        && data.uid is string
+        && data.uid.size() >= 1
+        && data.uid.size() <= 128
+        && data.email is string
+        && data.email.size() >= 5
+        && data.email.size() <= 120
+        && data.name is string
+        && data.name.size() >= 2
+        && data.name.size() <= 80
+        && data.role is string
+        && data.role in ['super_admin', 'admin', 'moderator', 'support_admin']
+        && data.status is string
+        && data.status in ['active', 'deactivated']
+        && data.customPermissions is list
+        && data.customPermissions.size() <= 20
+        && data.revokedPermissions is list
+        && data.revokedPermissions.size() <= 20
+        && data.grantedBy is string
+        && data.grantedBy.size() >= 2
+        && data.grantedBy.size() <= 120
+        && data.grantedAt is timestamp
+        && data.lastLoginAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidMarketplaceListing(data, listingId) {
+      return data.keys().hasAll([
+          'id',
+          'ownerId',
+          'ownerName',
+          'title',
+          'category',
+          'condition',
+          'dailyPriceINR',
+          'refundableDepositINR',
+          'replacementValueINR',
+          'city',
+          'neighborhood',
+          'pickupLocation',
+          'description',
+          'imageUrl',
+          'availableFrom',
+          'availableTo',
+          'minRentalDays',
+          'status',
+          'cancellationPolicy',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id',
+          'ownerId',
+          'ownerName',
+          'title',
+          'category',
+          'condition',
+          'dailyPriceINR',
+          'refundableDepositINR',
+          'replacementValueINR',
+          'city',
+          'neighborhood',
+          'pickupLocation',
+          'description',
+          'imageUrl',
+          'availableFrom',
+          'availableTo',
+          'minRentalDays',
+          'status',
+          'cancellationPolicy',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.id is string
+        && data.id.size() >= 1
+        && data.id.size() <= 128
+        && data.id.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.id == listingId
+        && data.ownerId is string
+        && data.ownerId.size() >= 1
+        && data.ownerId.size() <= 128
+        && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerName is string
+        && data.ownerName.size() >= 2
+        && data.ownerName.size() <= 80
+        && data.title is string
+        && data.title.size() >= 5
+        && data.title.size() <= 140
+        && data.category is string
+        && data.category.size() >= 4
+        && data.category.size() <= 30
+        && data.category in [
+          'Electronics',
+          'Photography',
+          'Gaming',
+          'Tools',
+          'Events',
+          'Outdoor',
+          'Education',
+          'Musical Instruments'
+        ]
+        && data.condition is string
+        && data.condition.size() >= 4
+        && data.condition.size() <= 15
+        && data.condition in ['Like New', 'Excellent', 'Good']
+        && data.dailyPriceINR is int
+        && data.dailyPriceINR >= 50
+        && data.dailyPriceINR <= 500000
+        && data.refundableDepositINR is int
+        && data.refundableDepositINR >= 0
+        && data.refundableDepositINR <= 1000000
+        && data.replacementValueINR is int
+        && data.replacementValueINR >= 100
+        && data.replacementValueINR <= 2000000
+        && data.city is string
+        && data.city.size() >= 2
+        && data.city.size() <= 60
+        && data.neighborhood is string
+        && data.neighborhood.size() >= 2
+        && data.neighborhood.size() <= 80
+        && data.pickupLocation is string
+        && data.pickupLocation.size() >= 5
+        && data.pickupLocation.size() <= 200
+        && data.description is string
+        && data.description.size() >= 20
+        && data.description.size() <= 2000
+        && data.imageUrl is string
+        && data.imageUrl.size() >= 1
+        && data.imageUrl.size() <= 350000
+        && data.availableFrom is string
+        && data.availableFrom.size() == 10
+        && data.availableTo is string
+        && data.availableTo.size() == 10
+        && data.minRentalDays is int
+        && data.minRentalDays >= 1
+        && data.minRentalDays <= 60
+        && data.status is string
+        && data.status.size() >= 6
+        && data.status.size() <= 10
+        && data.status in ['active', 'archived']
+        && data.cancellationPolicy is string
+        && data.cancellationPolicy.size() >= 5
+        && data.cancellationPolicy.size() <= 80
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidRentalBooking(data, bookingId) {
+      return data.keys().hasAll([
+          'id',
+          'listingId',
+          'listingTitle',
+          'listingCity',
+          'ownerId',
+          'ownerName',
+          'borrowerId',
+          'borrowerName',
+          'startDate',
+          'endDate',
+          'days',
+          'dailyRateINR',
+          'netRentalCostINR',
+          'refundableDepositINR',
+          'totalUpfrontINR',
+          'status',
+          'depositStatus',
+          'handoverCode',
+          'pickupConditionNote',
+          'pickupPhotoUrl',
+          'returnConditionNote',
+          'returnPhotoUrl',
+          'disputeReason',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id',
+          'listingId',
+          'listingTitle',
+          'listingCity',
+          'ownerId',
+          'ownerName',
+          'borrowerId',
+          'borrowerName',
+          'startDate',
+          'endDate',
+          'days',
+          'dailyRateINR',
+          'netRentalCostINR',
+          'refundableDepositINR',
+          'totalUpfrontINR',
+          'status',
+          'depositStatus',
+          'handoverCode',
+          'pickupConditionNote',
+          'pickupPhotoUrl',
+          'returnConditionNote',
+          'returnPhotoUrl',
+          'disputeReason',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.id is string
+        && data.id.size() >= 1
+        && data.id.size() <= 128
+        && data.id.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.id == bookingId
+        && data.listingId is string
+        && data.listingId.size() >= 1
+        && data.listingId.size() <= 128
+        && data.listingId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.listingTitle is string
+        && data.listingTitle.size() >= 2
+        && data.listingTitle.size() <= 140
+        && data.listingCity is string
+        && data.listingCity.size() >= 2
+        && data.listingCity.size() <= 40
+        && data.ownerId is string
+        && data.ownerId.size() >= 1
+        && data.ownerId.size() <= 128
+        && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerName is string
+        && data.ownerName.size() >= 2
+        && data.ownerName.size() <= 80
+        && data.borrowerId is string
+        && data.borrowerId.size() >= 1
+        && data.borrowerId.size() <= 128
+        && data.borrowerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.borrowerName is string
+        && data.borrowerName.size() >= 2
+        && data.borrowerName.size() <= 80
+        && data.startDate is string
+        && data.startDate.size() == 10
+        && data.endDate is string
+        && data.endDate.size() == 10
+        && data.days is int
+        && data.days >= 1
+        && data.days <= 60
+        && data.dailyRateINR is int
+        && data.dailyRateINR >= 50
+        && data.dailyRateINR <= 500000
+        && data.netRentalCostINR is int
+        && data.netRentalCostINR >= 50
+        && data.netRentalCostINR <= 10000000
+        && data.refundableDepositINR is int
+        && data.refundableDepositINR >= 0
+        && data.refundableDepositINR <= 1000000
+        && data.totalUpfrontINR is int
+        && data.totalUpfrontINR >= 50
+        && data.totalUpfrontINR <= 11000000
+        && data.status is string
+        && data.status.size() >= 6
+        && data.status.size() <= 15
+        && data.status in [
+          'pending',
+          'accepted',
+          'rejected',
+          'cancelled',
+          'picked_up',
+          'returned',
+          'completed',
+          'disputed'
+        ]
+        && data.depositStatus is string
+        && data.depositStatus.size() >= 8
+        && data.depositStatus.size() <= 20
+        && data.depositStatus in ['pending_pickup', 'held_at_pickup', 'refunded', 'disputed']
+        && data.handoverCode is string
+        && data.handoverCode.size() >= 4
+        && data.handoverCode.size() <= 32
+        && data.pickupConditionNote is string
+        && data.pickupConditionNote.size() <= 500
+        && data.pickupPhotoUrl is string
+        && data.pickupPhotoUrl.size() <= 350000
+        && data.returnConditionNote is string
+        && data.returnConditionNote.size() <= 500
+        && data.returnPhotoUrl is string
+        && data.returnPhotoUrl.size() <= 350000
+        && data.disputeReason is string
+        && data.disputeReason.size() <= 500
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidBookingMessage(data, bookingId, messageId) {
+      return data.keys().hasAll([
+          'id',
+          'bookingId',
+          'senderId',
+          'senderName',
+          'borrowerId',
+          'ownerId',
+          'text',
+          'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'id',
+          'bookingId',
+          'senderId',
+          'senderName',
+          'borrowerId',
+          'ownerId',
+          'text',
+          'createdAt'
+        ])
+        && data.id is string
+        && data.id.size() >= 1
+        && data.id.size() <= 128
+        && data.id.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.id == messageId
+        && data.bookingId is string
+        && data.bookingId.size() >= 1
+        && data.bookingId.size() <= 128
+        && data.bookingId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.bookingId == bookingId
+        && data.senderId is string
+        && data.senderId.size() >= 1
+        && data.senderId.size() <= 128
+        && data.senderId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.senderId == request.auth.uid
+        && data.senderName is string
+        && data.senderName.size() >= 2
+        && data.senderName.size() <= 80
+        && data.borrowerId is string
+        && data.borrowerId.size() >= 1
+        && data.borrowerId.size() <= 128
+        && data.borrowerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId is string
+        && data.ownerId.size() >= 1
+        && data.ownerId.size() <= 128
+        && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.text is string
+        && data.text.size() >= 1
+        && data.text.size() <= 600
+        && data.createdAt is timestamp;
+    }
+
+    function isValidRentalReview(data, reviewId) {
+      return data.keys().hasAll([
+          'id',
+          'bookingId',
+          'listingId',
+          'reviewerId',
+          'reviewerName',
+          'revieweeId',
+          'rating',
+          'comment',
+          'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'id',
+          'bookingId',
+          'listingId',
+          'reviewerId',
+          'reviewerName',
+          'revieweeId',
+          'rating',
+          'comment',
+          'createdAt'
+        ])
+        && data.id is string
+        && data.id.size() >= 1
+        && data.id.size() <= 128
+        && data.id.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.id == reviewId
+        && data.bookingId is string
+        && data.bookingId.size() >= 1
+        && data.bookingId.size() <= 128
+        && data.bookingId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.listingId is string
+        && data.listingId.size() >= 1
+        && data.listingId.size() <= 128
+        && data.listingId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.reviewerId is string
+        && data.reviewerId.size() >= 1
+        && data.reviewerId.size() <= 128
+        && data.reviewerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.reviewerId == request.auth.uid
+        && data.reviewerName is string
+        && data.reviewerName.size() >= 2
+        && data.reviewerName.size() <= 80
+        && data.revieweeId is string
+        && data.revieweeId.size() >= 1
+        && data.revieweeId.size() <= 128
+        && data.revieweeId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.rating is int
+        && data.rating >= 1
+        && data.rating <= 5
+        && data.comment is string
+        && data.comment.size() >= 5
+        && data.comment.size() <= 600
+        && data.createdAt is timestamp;
+    }
+
+    function isValidUserModeration(data, userId) {
+      return data.keys().hasAll(['userId', 'status', 'reason', 'updatedByEmail', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'status', 'reason', 'updatedByEmail', 'updatedAt'])
+        && data.userId == userId
+        && data.status in ['active', 'suspended', 'deleted']
+        && data.reason is string && data.reason.size() <= 500
+        && data.updatedByEmail is string && data.updatedByEmail.size() >= 3 && data.updatedByEmail.size() <= 120
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidListingModeration(data, listingId) {
+      return data.keys().hasAll(['listingId', 'moderationStatus', 'reason', 'reviewedByEmail', 'reviewedAt'])
+        && data.keys().hasOnly(['listingId', 'moderationStatus', 'reason', 'reviewedByEmail', 'reviewedAt'])
+        && data.listingId == listingId
+        && data.moderationStatus in ['pending', 'approved', 'rejected', 'flagged']
+        && data.reason is string && data.reason.size() <= 500
+        && data.reviewedByEmail is string && data.reviewedByEmail.size() >= 3 && data.reviewedByEmail.size() <= 120
+        && data.reviewedAt is timestamp;
+    }
+
+    function isValidPlatformReport(data, reportId) {
+      return data.keys().hasAll([
+          'id',
+          'targetType',
+          'targetId',
+          'targetTitle',
+          'reporterId',
+          'reporterName',
+          'reason',
+          'category',
+          'severity',
+          'status',
+          'resolutionNote',
+          'assignedAdminEmail',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id',
+          'targetType',
+          'targetId',
+          'targetTitle',
+          'reporterId',
+          'reporterName',
+          'reason',
+          'category',
+          'severity',
+          'status',
+          'resolutionNote',
+          'assignedAdminEmail',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.id == reportId
+        && data.targetType in ['listing', 'user', 'booking']
+        && data.targetId is string && data.targetId.size() >= 1 && data.targetId.size() <= 128
+        && data.targetTitle is string && data.targetTitle.size() >= 2 && data.targetTitle.size() <= 160
+        && data.reporterId is string && data.reporterId.size() >= 1 && data.reporterId.size() <= 128
+        && data.reporterName is string && data.reporterName.size() >= 2 && data.reporterName.size() <= 80
+        && data.reason is string && data.reason.size() >= 5 && data.reason.size() <= 800
+        && data.category in ['fraud_scam', 'damaged_item', 'prohibited_item', 'no_show', 'abusive_behavior', 'other']
+        && data.severity in ['low', 'medium', 'high', 'critical']
+        && data.status in ['open', 'investigating', 'resolved', 'dismissed']
+        && data.resolutionNote is string && data.resolutionNote.size() <= 800
+        && data.assignedAdminEmail is string && data.assignedAdminEmail.size() <= 120
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSupportTicket(data, ticketId) {
+      return data.keys().hasAll([
+          'id',
+          'userId',
+          'userName',
+          'userEmail',
+          'bookingId',
+          'subject',
+          'description',
+          'status',
+          'internalNotes',
+          'assignedToEmail',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id',
+          'userId',
+          'userName',
+          'userEmail',
+          'bookingId',
+          'subject',
+          'description',
+          'priority',
+          'status',
+          'internalNotes',
+          'assignedToEmail',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.id == ticketId
+        && data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128
+        && data.userName is string && data.userName.size() >= 2 && data.userName.size() <= 80
+        && data.userEmail is string && data.userEmail.size() >= 3 && data.userEmail.size() <= 120
+        && data.bookingId is string && data.bookingId.size() <= 128
+        && data.subject is string && data.subject.size() >= 3 && data.subject.size() <= 160
+        && data.description is string && data.description.size() >= 5 && data.description.size() <= 1200
+        && (!('priority' in data) || data.priority in ['low', 'medium', 'high', 'urgent', 'normal'])
+        && data.status in ['open', 'in_progress', 'waiting_for_user', 'resolved', 'closed']
+        && data.internalNotes is string && data.internalNotes.size() <= 2000
+        && data.assignedToEmail is string && data.assignedToEmail.size() <= 120
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAuditLog(data, logId) {
+      return data.keys().hasAll([
+          'id',
+          'adminId',
+          'adminEmail',
+          'adminRole',
+          'action',
+          'targetType',
+          'targetId',
+          'targetLabel',
+          'previousValue',
+          'newValue',
+          'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'id',
+          'adminId',
+          'adminEmail',
+          'adminRole',
+          'action',
+          'targetType',
+          'targetId',
+          'targetLabel',
+          'previousValue',
+          'newValue',
+          'createdAt'
+        ])
+        && data.id == logId
+        && data.adminId is string && data.adminId.size() >= 1 && data.adminId.size() <= 128
+        && data.adminEmail is string && data.adminEmail.size() >= 5 && data.adminEmail.size() <= 120
+        && data.adminRole in ['super_admin', 'admin', 'moderator', 'support_admin']
+        && data.action is string && data.action.size() >= 2 && data.action.size() <= 120
+        && data.targetType in ['user', 'product', 'booking', 'report', 'support_ticket', 'admin', 'settings']
+        && data.targetId is string && data.targetId.size() >= 1 && data.targetId.size() <= 128
+        && data.targetLabel is string && data.targetLabel.size() >= 1 && data.targetLabel.size() <= 160
+        && data.previousValue is string && data.previousValue.size() <= 1000
+        && data.newValue is string && data.newValue.size() <= 1000
+        && data.createdAt is timestamp;
+    }
+
+    function isValidPlatformSettings(data) {
+      return data.keys().hasAll([
+          'id',
+          'platformFeePercent',
+          'minDepositINR',
+          'requireListingApproval',
+          'maintenanceMode',
+          'autoFlagHighValueThresholdINR',
+          'supportEscalationEmail',
+          'updatedByEmail',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id',
+          'platformFeePercent',
+          'minDepositINR',
+          'requireListingApproval',
+          'maintenanceMode',
+          'autoFlagHighValueThresholdINR',
+          'supportEscalationEmail',
+          'updatedByEmail',
+          'updatedAt'
+        ])
+        && data.id == 'global'
+        && data.platformFeePercent is int && data.platformFeePercent >= 0 && data.platformFeePercent <= 30
+        && data.minDepositINR is int && data.minDepositINR >= 0 && data.minDepositINR <= 50000
+        && data.requireListingApproval is bool
+        && data.maintenanceMode is bool
+        && data.autoFlagHighValueThresholdINR is int && data.autoFlagHighValueThresholdINR >= 1000 && data.autoFlagHighValueThresholdINR <= 2000000
+        && data.supportEscalationEmail is string && data.supportEscalationEmail.size() >= 5 && data.supportEscalationEmail.size() <= 120
+        && data.updatedByEmail is string && data.updatedByEmail.size() >= 5 && data.updatedByEmail.size() <= 120
+        && data.updatedAt is timestamp;
+    }
+
+    // 4. Collection Rules: Public User Profiles (/users/{userId})
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+
+      allow create: if isSignedIn()
+        && isValidId(userId)
+        && isOwner(userId)
+        && isValidUserPublicProfile(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isSignedIn()
+        && isValidId(userId)
+        && isValidUserPublicProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            isOwner(userId) &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'name',
+              'photoURL',
+              'city',
+              'neighborhood',
+              'canRent',
+              'canList',
+              'activeMode',
+              'updatedAt'
+            ])
+          )
+        );
+
+      allow delete: if isSignedIn() && isValidId(userId) && isAdmin();
+
+      // 5. Subcollection Rules: Isolated Private PII (/users/{userId}/private/{docId})
+      match /private/{docId} {
+        allow get: if isSignedIn()
+          && isValidId(userId)
+          && isValidId(docId)
+          && docId == 'info'
+          && (isOwner(userId) || isAdmin())
+          && exists(/databases/$(database)/documents/users/$(userId));
+
+        allow list: if isAdmin();
+
+        allow create: if isSignedIn()
+          && isValidId(userId)
+          && isValidId(docId)
+          && docId == 'info'
+          && isOwner(userId)
+          && isValidUserPrivateProfile(incoming(), userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && (
+            exists(/databases/$(database)/documents/users/$(userId)) ||
+            existsAfter(/databases/$(database)/documents/users/$(userId))
+          );
+
+        allow update: if isSignedIn()
+          && isValidId(userId)
+          && isValidId(docId)
+          && docId == 'info'
+          && isValidUserPrivateProfile(incoming(), userId)
+          && incoming().uid == existing().uid
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && exists(/databases/$(database)/documents/users/$(userId))
+          && (
+            isAdmin() ||
+            (
+              isOwner(userId) &&
+              incoming().diff(existing()).affectedKeys().hasOnly(['email', 'phone', 'updatedAt'])
+            )
+          );
+
+        allow delete: if isSignedIn() && isValidId(userId) && isValidId(docId) && isAdmin();
+      }
+    }
+
+    // 6. Collection Rules: Separate RBAC Administrator Registry (/admins/{adminId})
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidAdminKey(adminId) && (
+        request.auth.uid == adminId ||
+        request.auth.token.email == adminId ||
+        isAdmin()
+      );
+
+      allow list: if isAdmin();
+
+      allow create: if isSignedIn()
+        && isValidAdminKey(adminId)
+        && isValidAdminRecord(incoming(), adminId)
+        && incoming().grantedAt == request.time
+        && incoming().updatedAt == request.time
+        && isSuperAdmin();
+
+      allow update: if isSignedIn()
+        && isValidAdminKey(adminId)
+        && isValidAdminRecord(incoming(), adminId)
+        && incoming().id == existing().id
+        && incoming().email == existing().email
+        && incoming().grantedAt == existing().grantedAt
+        && incoming().updatedAt == request.time
+        && (
+          isSuperAdmin() ||
+          (
+            isAdmin() &&
+            request.auth.token.email_verified == true &&
+            request.auth.token.email == existing().email &&
+            incoming().role == existing().role &&
+            incoming().status == existing().status &&
+            incoming().customPermissions == existing().customPermissions &&
+            incoming().revokedPermissions == existing().revokedPermissions &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['uid', 'name', 'lastLoginAt', 'updatedAt'])
+          )
+        );
+
+      allow delete: if isSignedIn() && isValidAdminKey(adminId) && isSuperAdmin() && adminId != 'marukrutarth@gmail.com';
+    }
+
+    // 7. Collection Rules: Marketplace Listings (/listings/{listingId})
+    match /listings/{listingId} {
+      allow get: if isValidId(listingId) && (
+        existing().status == 'active' ||
+        (isSignedIn() && existing().ownerId == request.auth.uid) ||
+        isAdmin()
+      );
+
+      allow list: if existing().status == 'active' ||
+        (isSignedIn() && existing().ownerId == request.auth.uid) ||
+        isAdmin();
+
+      allow create: if isSignedIn()
+        && isValidId(listingId)
+        && isValidMarketplaceListing(incoming(), listingId)
+        && incoming().ownerId == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+
+      allow update: if isSignedIn()
+        && isValidId(listingId)
+        && isValidMarketplaceListing(incoming(), listingId)
+        && incoming().id == existing().id
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            existing().ownerId == request.auth.uid &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'title',
+              'category',
+              'condition',
+              'dailyPriceINR',
+              'refundableDepositINR',
+              'replacementValueINR',
+              'city',
+              'neighborhood',
+              'pickupLocation',
+              'description',
+              'imageUrl',
+              'availableFrom',
+              'availableTo',
+              'minRentalDays',
+              'status',
+              'cancellationPolicy',
+              'updatedAt'
+            ])
+          )
+        );
+
+      allow delete: if isSignedIn() && isValidId(listingId) && isAdmin();
+    }
+
+    // 8. Collection Rules: Rental Bookings (/bookings/{bookingId})
+    match /bookings/{bookingId} {
+      allow get: if isSignedIn()
+        && isValidId(bookingId)
+        && (
+          existing().borrowerId == request.auth.uid ||
+          existing().ownerId == request.auth.uid ||
+          isAdmin()
+        );
+
+      allow list: if isSignedIn() && (
+        existing().borrowerId == request.auth.uid ||
+        existing().ownerId == request.auth.uid ||
+        existing().status in ['accepted', 'picked_up'] ||
+        isAdmin()
+      );
+
+      allow create: if isSignedIn()
+        && isValidId(bookingId)
+        && isValidRentalBooking(incoming(), bookingId)
+        && incoming().borrowerId == request.auth.uid
+        && incoming().borrowerId != incoming().ownerId
+        && incoming().status == 'pending'
+        && incoming().depositStatus == 'pending_pickup'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+
+      allow update: if isSignedIn()
+        && isValidId(bookingId)
+        && isValidRentalBooking(incoming(), bookingId)
+        && incoming().id == existing().id
+        && incoming().listingId == existing().listingId
+        && incoming().ownerId == existing().ownerId
+        && incoming().borrowerId == existing().borrowerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            !(existing().status in ['rejected', 'cancelled', 'completed']) &&
+            (
+              (
+                existing().ownerId == request.auth.uid &&
+                incoming().diff(existing()).affectedKeys().hasOnly([
+                  'status',
+                  'depositStatus',
+                  'pickupConditionNote',
+                  'pickupPhotoUrl',
+                  'returnConditionNote',
+                  'returnPhotoUrl',
+                  'disputeReason',
+                  'updatedAt'
+                ])
+              ) ||
+              (
+                existing().borrowerId == request.auth.uid &&
+                incoming().diff(existing()).affectedKeys().hasOnly([
+                  'status',
+                  'depositStatus',
+                  'pickupConditionNote',
+                  'pickupPhotoUrl',
+                  'returnConditionNote',
+                  'returnPhotoUrl',
+                  'disputeReason',
+                  'updatedAt'
+                ])
+              )
+            )
+          )
+        );
+
+      allow delete: if isSignedIn() && isValidId(bookingId) && isAdmin();
+
+      // 9. Subcollection Rules: Booking Private Messages (/bookings/{bookingId}/messages/{messageId})
+      match /messages/{messageId} {
+        allow get: if isSignedIn()
+          && isValidId(bookingId)
+          && isValidId(messageId)
+          && (
+            existing().borrowerId == request.auth.uid ||
+            existing().ownerId == request.auth.uid ||
+            isAdmin()
+          );
+
+        allow list: if isSignedIn()
+          && (
+            existing().borrowerId == request.auth.uid ||
+            existing().ownerId == request.auth.uid ||
+            isAdmin()
+          );
+
+        allow create: if isSignedIn()
+          && isValidId(bookingId)
+          && isValidId(messageId)
+          && isValidBookingMessage(incoming(), bookingId, messageId)
+          && incoming().createdAt == request.time
+          && exists(/databases/$(database)/documents/bookings/$(bookingId))
+          && get(/databases/$(database)/documents/bookings/$(bookingId)).data.borrowerId == incoming().borrowerId
+          && get(/databases/$(database)/documents/bookings/$(bookingId)).data.ownerId == incoming().ownerId
+          && (
+            incoming().borrowerId == request.auth.uid ||
+            incoming().ownerId == request.auth.uid
+          );
+
+        allow update, delete: if false;
+      }
+    }
+
+    // 10. Collection Rules: Verified Rental Reviews (/reviews/{reviewId})
+    match /reviews/{reviewId} {
+      allow get: if isValidId(reviewId) && (existing().rating >= 1 || isAdmin());
+
+      allow list: if existing().rating >= 1 || isAdmin();
+
+      allow create: if isSignedIn()
+        && isValidId(reviewId)
+        && isValidRentalReview(incoming(), reviewId)
+        && incoming().createdAt == request.time
+        && exists(/databases/$(database)/documents/bookings/$(incoming().bookingId))
+        && get(/databases/$(database)/documents/bookings/$(incoming().bookingId)).data.borrowerId == request.auth.uid
+        && get(/databases/$(database)/documents/bookings/$(incoming().bookingId)).data.status in ['returned', 'completed'];
+
+      allow update, delete: if false;
+    }
+
+    // 11. Collection Rules: User Moderation (/user_moderation/{userId})
+    match /user_moderation/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create, update: if isAdmin()
+        && isValidId(userId)
+        && isValidUserModeration(incoming(), userId)
+        && incoming().updatedAt == request.time;
+      allow delete: if isSuperAdmin();
+    }
+
+    // 12. Collection Rules: Listing Moderation (/listing_moderation/{listingId})
+    match /listing_moderation/{listingId} {
+      allow get, list: if true;
+      allow create, update: if isAdmin()
+        && isValidId(listingId)
+        && isValidListingModeration(incoming(), listingId)
+        && incoming().reviewedAt == request.time;
+      allow delete: if isSuperAdmin();
+    }
+
+    // 13. Collection Rules: Platform Reports & Complaints (/reports/{reportId})
+    match /reports/{reportId} {
+      allow get, list: if isAdmin() || (isSignedIn() && existing().reporterId == request.auth.uid);
+      allow create: if isSignedIn()
+        && isValidId(reportId)
+        && isValidPlatformReport(incoming(), reportId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && (incoming().reporterId == request.auth.uid || isAdmin());
+      allow update: if isAdmin()
+        && isValidId(reportId)
+        && isValidPlatformReport(incoming(), reportId)
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time;
+      allow delete: if isSuperAdmin();
+    }
+
+    // 14. Collection Rules: Support Tickets (/support_tickets/{ticketId})
+    match /support_tickets/{ticketId} {
+      allow get, list: if isAdmin() || (isSignedIn() && existing().userId == request.auth.uid);
+      allow create: if isSignedIn()
+        && isValidId(ticketId)
+        && isValidSupportTicket(incoming(), ticketId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && (incoming().userId == request.auth.uid || isAdmin());
+      allow update: if isAdmin()
+        && isValidId(ticketId)
+        && isValidSupportTicket(incoming(), ticketId)
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time;
+      allow delete: if isSuperAdmin();
+    }
+
+    // 15. Collection Rules: Immutable Administrative Audit Logs (/audit_logs/{logId})
+    match /audit_logs/{logId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin()
+        && isValidId(logId)
+        && isValidAuditLog(incoming(), logId)
+        && incoming().createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    // 16. Collection Rules: Global Platform Settings (/platform_settings/{settingId})
+    match /platform_settings/{settingId} {
+      allow get, list: if true;
+      allow create, update: if isSuperAdmin()
+        && settingId == 'global'
+        && isValidPlatformSettings(incoming())
+        && incoming().updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    // 17. Collection Rules: Complete Support Ticket Management System (/supportTickets/{ticketId})
+    match /supportTickets/{ticketId} {
+      function parentTicketExists() {
+        return exists(/databases/$(database)/documents/supportTickets/$(ticketId));
+      }
+
+      function parentTicketAfterExists() {
+        return existsAfter(/databases/$(database)/documents/supportTickets/$(ticketId));
+      }
+
+      function parentTicketData() {
+        return parentTicketExists()
+          ? get(/databases/$(database)/documents/supportTickets/$(ticketId)).data
+          : getAfter(/databases/$(database)/documents/supportTickets/$(ticketId)).data;
+      }
+
+      function isTicketOwner() {
+        return isSignedIn()
+          && (parentTicketExists() || parentTicketAfterExists())
+          && parentTicketData().userId == request.auth.uid;
+      }
+
+      function isAssignedStaff() {
+        return isAdmin()
+          && (parentTicketExists() || parentTicketAfterExists())
+          && parentTicketData().assignedTo == request.auth.uid;
+      }
+
+      // Customer ownership restriction: customers can only read/list their own tickets; staff/admins can read all
+      allow get, list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+
+      // Customer ticket creation: must be open, unclaimed, and never contain internal staff notes (priority optional for backward compatibility)
+      allow create: if isSignedIn()
+        && isValidId(ticketId)
+        && (request.resource.data.userId == request.auth.uid || isAdmin())
+        && request.resource.data.status == 'open'
+        && (!('priority' in request.resource.data) || request.resource.data.priority in ['normal', 'urgent', 'low', 'medium', 'high'])
+        && (!('assignedTo' in request.resource.data) || request.resource.data.assignedTo == null || request.resource.data.assignedTo == '')
+        && (!('internalNotes' in request.resource.data) || request.resource.data.internalNotes == '');
+
+      // Ticket updates partitioned into 4 strict authority tiers:
+      // (A) Administrator Override (Super Admin / Level 2 Admin): can reassign, release claims, reopen, or override ownership
+      // (B) Staff Claiming Unclaimed Ticket: authorised staff can claim only if currently unclaimed (assignedTo == null/''), setting assignedTo = request.auth.uid and status = 'in_progress'
+      // (C) Assigned Staff Working on Claimed Ticket: regular staff can only modify tickets where resource.data.assignedTo == request.auth.uid and cannot reassign ownership
+      // (D) Customer Reply Status/Timestamp Transition: customer can update updatedAt/updatedAtISO and transition waiting_for_user back to in_progress on their own ticket
+      allow update: if isValidId(ticketId)
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.ticketNumber == resource.data.ticketNumber
+        && (!('priority' in request.resource.data) || request.resource.data.priority in ['normal', 'urgent', 'low', 'medium', 'high'])
+        && (request.resource.data.status in ['open', 'in_progress', 'waiting_for_user', 'resolved', 'closed'])
+        && (request.resource.data.status != 'closed' || (request.resource.data.resolutionSummary is string && request.resource.data.resolutionSummary.size() >= 5))
+        && (!('internalNotes' in request.resource.data) || request.resource.data.internalNotes == '')
+        && (
+          // Tier A: Administrator Override (Super Admin / Level 2 Admin)
+          isOverrideAdmin()
+          ||
+          // Tier B: Atomic Staff Claim on Unclaimed Ticket (prevents simultaneous claiming)
+          (
+            isAdmin()
+            && (!('assignedTo' in resource.data) || resource.data.assignedTo == null || resource.data.assignedTo == '')
+            && request.resource.data.assignedTo == request.auth.uid
+            && request.resource.data.status == 'in_progress'
+          )
+          ||
+          // Tier C: Assigned Support Staff modifying their own claimed ticket
+          (
+            isAdmin()
+            && resource.data.assignedTo == request.auth.uid
+            && request.resource.data.assignedTo == request.auth.uid
+          )
+          ||
+          // Tier D: Customer replying to their own active ticket
+          (
+            isSignedIn()
+            && resource.data.userId == request.auth.uid
+            && resource.data.status in ['open', 'in_progress', 'waiting_for_user']
+            && (
+              (resource.data.status == 'waiting_for_user' && request.resource.data.status == 'in_progress')
+              || request.resource.data.status == resource.data.status
+            )
+            && request.resource.data.get('assignedTo', null) == resource.data.get('assignedTo', null)
+            && request.resource.data.get('priority', null) == resource.data.get('priority', null)
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt', 'updatedAtISO'])
+          )
+        );
+
+      allow delete: if isSuperAdmin();
+
+      // Ticket Conversation & Internal Notes (/supportTickets/{ticketId}/messages/{messageId})
+      match /messages/{messageId} {
+        // Customers can ONLY read non-internal messages on their own tickets; staff/admins can read all messages
+        allow get, list: if isAdmin()
+          || (
+            isTicketOwner()
+            && resource.data.isInternal != true
+          );
+
+        // Staff can only post replies or internal notes if they claimed the ticket (or have Admin Override);
+        // Customers can only post non-internal customer messages on their own ticket
+        allow create: if (
+            (isOverrideAdmin() || isAssignedStaff())
+            && request.resource.data.senderId == request.auth.uid
+            && request.resource.data.ticketId == ticketId
+          )
+          || (
+            isTicketOwner()
+            && request.resource.data.ticketId == ticketId
+            && request.resource.data.senderId == request.auth.uid
+            && request.resource.data.senderRole == 'customer'
+            && request.resource.data.isInternal == false
+          );
+
+        allow update, delete: if false;
+      }
+
+      // Dedicated Staff-Only Internal Notes Subcollection (/supportTickets/{ticketId}/privateNotes/{noteId})
+      // Strictly inaccessible to customers
+      match /privateNotes/{noteId} {
+        allow get, list: if isAdmin();
+        allow create, update: if isOverrideAdmin() || isAssignedStaff();
+        allow delete: if isSuperAdmin();
+      }
+
+      // Immutable Ticket Activity & Claim/Override History (/supportTickets/{ticketId}/history/{eventId})
+      match /history/{eventId} {
+        // Customers can read history on their own ticket except internal_note_added events
+        allow get, list: if isAdmin()
+          || (
+            isTicketOwner()
+            && resource.data.action != 'internal_note_added'
+          );
+        allow create: if (isAdmin() || isTicketOwner()) && request.resource.data.actorId == request.auth.uid;
+        allow update, delete: if false;
+      }
+    }
+
+    // 18. Collection Rules: Support In-App Notifications (/supportNotifications/{notifId})
+    match /supportNotifications/{notifId} {
+      allow get, list: if isAdmin()
+        || (
+          isSignedIn()
+          && resource.data.recipientUid == request.auth.uid
+          && (!('recipientRole' in resource.data) || resource.data.recipientRole == 'customer')
+        );
+      allow create: if isSignedIn();
+      allow update: if isAdmin()
+        || (
+          isSignedIn()
+          && resource.data.recipientUid == request.auth.uid
+          && (!('recipientRole' in resource.data) || resource.data.recipientRole == 'customer')
+          && request.resource.data.recipientUid == resource.data.recipientUid
+        );
+      allow delete: if isSuperAdmin();
+    }
+  }
+}
+
