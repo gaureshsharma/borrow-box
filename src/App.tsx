@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -121,7 +121,13 @@ function parseUrlToRoute(pathname: string, search: string): PageRoute {
   let cleanPath = pathname;
   if (typeof window !== 'undefined' && window.location.hash) {
     const rawHash = window.location.hash.replace(/^#\/?/, '/');
-    if (rawHash && rawHash !== '/') {
+    if (
+      rawHash &&
+      rawHash !== '/' &&
+      !rawHash.includes('access_token=') &&
+      !rawHash.includes('error=') &&
+      !rawHash.includes('error_description=')
+    ) {
       cleanPath = rawHash;
     }
   }
@@ -521,6 +527,18 @@ export default function App() {
           updatedAtISO: new Date().toISOString(),
         });
         setAdminAccessDeniedReason(null);
+      }
+
+      // If returning from Google OAuth redirect with access token in the URL hash
+      if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+        try {
+          window.history.replaceState(null, '', window.location.pathname);
+        } catch {}
+        if (isSuperAdminEmail(sbUser.email)) {
+          handleNavigate({ page: 'admin' });
+        } else {
+          handleNavigate({ page: 'dashboard' });
+        }
       }
     };
 

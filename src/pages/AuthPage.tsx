@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import {
   AlertCircle,
   ArrowLeft,
@@ -54,6 +54,17 @@ function formatFirebaseAuthError(error: unknown): {
   needsDomainAuthGuide: boolean;
 } {
   const raw = error instanceof Error ? error.message : String(error);
+  if (
+    raw.includes('invalid_client') ||
+    raw.includes('OAuth client was not found')
+  ) {
+    return {
+      message:
+        'Google OAuth Setup: In your Supabase Dashboard under Authentication -> Providers -> Google, check your Client ID. Remove the extra ".com" at the end if it has duplicate ".com.com".',
+      needsEmailProviderEnable: false,
+      needsDomainAuthGuide: false,
+    };
+  }
   if (raw.includes('auth/operation-not-allowed')) {
     return {
       message:
@@ -321,6 +332,38 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     }
   };
 
+  // Detect returning OAuth hash errors or callbacks on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = window.location.hash || '';
+    const search = window.location.search || '';
+
+    const hashParams = new URLSearchParams(hash.replace(/^#/, ''));
+    const searchParams = new URLSearchParams(search);
+
+    const errorDesc =
+      hashParams.get('error_description') ||
+      searchParams.get('error_description') ||
+      hashParams.get('error') ||
+      searchParams.get('error');
+
+    if (errorDesc) {
+      const decoded = decodeURIComponent(errorDesc.replace(/\+/g, ' '));
+      if (
+        decoded.includes('invalid_client') ||
+        decoded.includes('OAuth client was not found')
+      ) {
+        setAuthError(
+          'Google OAuth Setup: In your Supabase Dashboard under Authentication -> Providers -> Google, check your Client ID. Remove the extra ".com" at the end if it has duplicate ".com.com".'
+        );
+      } else {
+        setAuthError(decoded);
+      }
+    } else if (hashParams.get('access_token')) {
+      setStatusMessage('Signed in with Google! Preparing your BorrowBox dashboard...');
+    }
+  }, []);
+
   const handleGoogleSignIn = async () => {
     setAuthError(null);
     setStatusMessage(null);
@@ -328,30 +371,19 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     setShowDomainAuthGuide(false);
     setIsGoogleLoading(true);
     try {
-      // 1. Primary: Use Firebase native Google Sign-In popup (opens browser Google Account selector)
-      try {
-        const profile = await signInWithGooglePopup();
-        setStatusMessage('Signed in with Google! Redirecting...');
-        onAuthenticated(profile);
-        return;
-      } catch (popupErr: any) {
-        const raw = popupErr instanceof Error ? popupErr.message : String(popupErr);
-        if (raw.includes('auth/popup-closed-by-user')) {
-          return;
-        }
-        // 2. Fallback: Supabase OAuth redirect
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: window.location.origin,
-          },
-        });
-        if (error) throw error;
-        if (data?.url) {
-          window.location.href = data.url;
-        }
+      const redirectUri =
+        typeof window !== 'undefined' ? window.location.origin : undefined;
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUri,
+        },
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
       }
-    } catch (err) {
+    } catch (err: any) {
       const formatted = formatFirebaseAuthError(err);
       setAuthError(formatted.message);
       setShowDomainAuthGuide(formatted.needsDomainAuthGuide);
