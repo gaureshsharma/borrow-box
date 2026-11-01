@@ -51,9 +51,9 @@ function formatFirebaseAuthError(error: unknown): {
   if (raw.includes('auth/unauthorized-domain')) {
     return {
       message:
-        'This domain (gaureshsharma.github.io) is not yet authorized in Firebase Console.',
+        'Google OAuth sign-in is restricted on this domain by Google. Please sign in or create an account using Email & Password or Mobile OTP below.',
       needsEmailProviderEnable: false,
-      needsDomainAuthGuide: true,
+      needsDomainAuthGuide: false,
     };
   }
   if (raw.includes('auth/operation-not-allowed')) {
@@ -570,30 +570,20 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 <div className="pt-2 border-t border-[#EF4444]/20 text-[#94A3B8] bg-[#111827] p-3 rounded-xl border border-white/[0.08] space-y-2 text-xs">
                   <p className="font-semibold text-[#F8FAFC] flex items-center gap-1.5">
                     <Globe className="w-4 h-4 text-[#8B5CF6]" />
-                    Authorize this domain in Firebase Console (1 minute):
+                    Note for Custom Firebase Projects:
                   </p>
                   <p>
-                    Firebase Auth requires you to add your hosting domain to prevent unauthorized requests.
+                    If you are connecting your personal Firebase project, open{' '}
+                    <a
+                      href="https://console.firebase.google.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#8B5CF6] underline font-medium hover:text-[#A78BFA]"
+                    >
+                      Firebase Console
+                    </a>
+                    , select your project &rarr; Authentication &rarr; Settings &rarr; Authorized domains, and add <strong className="text-[#F8FAFC] font-mono">gaureshsharma.github.io</strong>.
                   </p>
-                  <ol className="list-decimal list-inside space-y-1 text-xs">
-                    <li>
-                      Open{' '}
-                      <a
-                        href={`https://console.firebase.google.com/project/${FIREBASE_PROJECT_ID}/authentication/settings`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[#8B5CF6] underline font-medium hover:text-[#A78BFA]"
-                      >
-                        Firebase Console → Authentication → Settings → Authorized domains
-                      </a>
-                    </li>
-                    <li>
-                      Click <strong className="text-[#F8FAFC]">Add domain</strong>.
-                    </li>
-                    <li>
-                      Add <strong className="text-[#F8FAFC] font-mono">gaureshsharma.github.io</strong> and click <strong className="text-[#F8FAFC]">Save</strong>.
-                    </li>
-                  </ol>
                 </div>
               )}
 
@@ -607,12 +597,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     <li>
                       Open{' '}
                       <a
-                        href={`https://console.firebase.google.com/project/${FIREBASE_PROJECT_ID}/authentication/providers`}
+                        href="https://console.firebase.google.com/"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[#8B5CF6] underline font-medium hover:text-[#A78BFA]"
                       >
-                        Firebase Console → Authentication → Sign-in method
+                        Firebase Console &rarr; Your Project &rarr; Authentication &rarr; Sign-in method
                       </a>
                     </li>
                     <li>

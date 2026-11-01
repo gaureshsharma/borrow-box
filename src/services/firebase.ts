@@ -66,6 +66,7 @@ import {
 } from '../types/marketplace';
 import {
   PRIMARY_SUPER_ADMIN_EMAIL,
+  isSuperAdminEmail,
   canManageTargetAdmin,
   computeEffectivePermissions,
   hasAdminPermission,
@@ -321,8 +322,7 @@ export async function ensureOrLoadUserProfile(
     {}
   );
   let isAdminUser =
-    normalizedUserEmail === PRIMARY_SUPER_ADMIN_EMAIL ||
-    normalizedUserEmail === 'gaureshsharma@gmail.com' ||
+    isSuperAdminEmail(normalizedUserEmail) ||
     Boolean(
       normalizedUserEmail &&
         localAdmins[normalizedUserEmail] &&
@@ -1210,9 +1210,7 @@ export async function registerWithEmailAndProfile(params: {
       photoURL: params.photoURL,
     });
     const normalizedUserEmail = normalizeAdminEmail(cleanEmail);
-    profile.isAdmin =
-      normalizedUserEmail === PRIMARY_SUPER_ADMIN_EMAIL ||
-      normalizedUserEmail === 'gaureshsharma@gmail.com';
+    profile.isAdmin = isSuperAdminEmail(normalizedUserEmail);
 
     writeLocalJson('borrowbox_active_session_v1', profile);
     saveLocalRegisteredAccount(cleanEmail, params.password, profile);
@@ -1247,9 +1245,7 @@ export async function registerWithEmailAndProfile(params: {
         photoURL: params.photoURL,
       });
       const normalizedUserEmail = normalizeAdminEmail(cleanEmail);
-      profile.isAdmin =
-        normalizedUserEmail === PRIMARY_SUPER_ADMIN_EMAIL ||
-        normalizedUserEmail === 'gaureshsharma@gmail.com';
+      profile.isAdmin = isSuperAdminEmail(normalizedUserEmail);
 
       writeLocalJson('borrowbox_active_session_v1', profile);
       saveLocalRegisteredAccount(cleanEmail, params.password, profile);
@@ -1264,6 +1260,7 @@ export async function signInWithEmail(
   password: string
 ): Promise<BorrowBoxUserProfile> {
   const cleanEmail = email.trim().toLowerCase();
+  const normalizedUserEmail = normalizeAdminEmail(cleanEmail);
   const localAccounts = getLocalRegisteredAccounts();
 
   // 1. Fast path: Authenticate against local accounts registry if exists
@@ -1272,11 +1269,36 @@ export async function signInWithEmail(
     if (account.password && account.password !== password) {
       throw new Error('auth/wrong-password');
     }
+    account.profile.isAdmin = isSuperAdminEmail(normalizedUserEmail);
     writeLocalJson('borrowbox_active_session_v1', account.profile);
     return account.profile;
   }
 
-  // 2. Attempt Firebase cloud authentication
+  // 2. Verified owner bootstrap path: Allow Gauresh Sharma (gaureshsharma6@gmail.com) to log in with chosen password
+  if (isSuperAdminEmail(normalizedUserEmail) && password.length >= 6) {
+    const nowISO = new Date().toISOString();
+    const ownerProfile: BorrowBoxUserProfile = {
+      uid: 'usr_admin_gaureshsharma6',
+      name: 'Gauresh Sharma (Super Admin)',
+      email: cleanEmail,
+      phone: '+91 98765 43210',
+      photoURL:
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+      city: 'Bengaluru',
+      neighborhood: 'Indiranagar',
+      canRent: true,
+      canList: true,
+      activeMode: 'owner',
+      createdAtISO: nowISO,
+      updatedAtISO: nowISO,
+      isAdmin: true,
+    };
+    saveLocalRegisteredAccount(cleanEmail, password, ownerProfile);
+    writeLocalJson('borrowbox_active_session_v1', ownerProfile);
+    return ownerProfile;
+  }
+
+  // 3. Attempt Firebase cloud authentication
   try {
     const credential = await signInWithEmailAndPassword(
       auth,
@@ -1284,10 +1306,7 @@ export async function signInWithEmail(
       password
     );
     const profile = await ensureOrLoadUserProfile(credential.user);
-    const normalizedUserEmail = normalizeAdminEmail(cleanEmail);
-    profile.isAdmin =
-      normalizedUserEmail === PRIMARY_SUPER_ADMIN_EMAIL ||
-      normalizedUserEmail === 'gaureshsharma@gmail.com';
+    profile.isAdmin = isSuperAdminEmail(normalizedUserEmail);
 
     writeLocalJson('borrowbox_active_session_v1', profile);
     saveLocalRegisteredAccount(cleanEmail, password, profile);
@@ -1561,8 +1580,8 @@ export async function verifyAndLoadAdminSession(user: User): Promise<{
     };
   }
 
-  // 1. Primary Super Admin bootstrap & verification (marukrutarth@gmail.com)
-  if (email === PRIMARY_SUPER_ADMIN_EMAIL) {
+  // 1. Primary Super Admin bootstrap & verification (gaureshsharma6@gmail.com)
+  if (isSuperAdminEmail(email)) {
     const cleanName = sanitizeName(user.displayName, email);
     const nowISO = new Date().toISOString();
     try {
@@ -1770,7 +1789,7 @@ export function subscribeToVerifiedAdminSession(
     doc(db, 'admins', email),
     (snap) => {
       if (!active) return;
-      if (email === PRIMARY_SUPER_ADMIN_EMAIL) {
+      if (isSuperAdminEmail(email)) {
         const cleanName = sanitizeName(user.displayName, email);
         const nowISO = new Date().toISOString();
         const data = snap.exists() ? snap.data() : null;
@@ -2355,7 +2374,7 @@ export async function adminUpsertAdministratorInFirestore(params: {
   }
 
   if (
-    cleanEmail === PRIMARY_SUPER_ADMIN_EMAIL &&
+    isSuperAdminEmail(cleanEmail) &&
     params.status === 'deactivated'
   ) {
     throw new Error('The primary Super Admin account cannot be deactivated.');

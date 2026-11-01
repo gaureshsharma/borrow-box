@@ -54,7 +54,19 @@ export interface AdminIdentityRecord {
   updatedAt?: string;
 }
 
-export const PRIMARY_SUPER_ADMIN_EMAIL = 'marukrutarth@gmail.com';
+export const PRIMARY_SUPER_ADMIN_EMAIL = 'gaureshsharma6@gmail.com';
+
+export const SUPER_ADMIN_EMAILS = [
+  'gaureshsharma6@gmail.com',
+  'gaureshsharma@gmail.com',
+  'marukrutarth@gmail.com',
+];
+
+export function isSuperAdminEmail(email?: string | null): boolean {
+  if (!email) return false;
+  const clean = normalizeAdminEmail(email);
+  return SUPER_ADMIN_EMAILS.includes(clean);
+}
 
 export const ALL_ADMIN_PERMISSIONS: {
   id: AdminPermission;
@@ -278,7 +290,7 @@ export function canManageTargetAdmin(
   const normalizedActor = normalizeAdminEmail(actor.email);
 
   // Protect root Super Admins from being demoted or deactivated
-  if (normalizedTarget === PRIMARY_SUPER_ADMIN_EMAIL || normalizedTarget === 'gaureshsharma@gmail.com') {
+  if (isSuperAdminEmail(normalizedTarget)) {
     if (requestedNewRole && requestedNewRole !== 'super_admin') {
       return {
         allowed: false,
@@ -295,7 +307,7 @@ export function canManageTargetAdmin(
     };
   }
 
-  if (targetCurrentRole === 'super_admin' && normalizedTarget === PRIMARY_SUPER_ADMIN_EMAIL && requestedNewRole !== 'super_admin') {
+  if (targetCurrentRole === 'super_admin' && isSuperAdminEmail(normalizedTarget) && requestedNewRole !== 'super_admin') {
     return {
       allowed: false,
       reason: 'Primary Super Admin authority is locked.',
