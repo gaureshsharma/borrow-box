@@ -13,7 +13,7 @@ import { PRIMARY_SUPER_ADMIN_EMAIL } from './src/utils/adminRbac.ts';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 function hasConfiguredGeminiKey(): boolean {
   const key = process.env.GEMINI_API_KEY;
