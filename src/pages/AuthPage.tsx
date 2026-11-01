@@ -252,7 +252,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#94A3B8] hover:text-[#8B5CF6] mb-6 cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          Back to BorrowBox Home
+          Back to BorroowBox Home
         </button>
 
         {redirectReason && (
@@ -277,9 +277,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-[#F8FAFC] tracking-tight">
               {viewMode === 'login'
-                ? 'Log In to BorrowBox'
+                ? 'Log In to BorroowBox'
                 : viewMode === 'signup'
-                ? 'Create Your BorrowBox Account'
+                ? 'Create Your BorroowBox Account'
                 : 'Reset Your Password'}
             </h1>
             <p className="text-xs text-[#94A3B8] mt-1 max-w-sm">

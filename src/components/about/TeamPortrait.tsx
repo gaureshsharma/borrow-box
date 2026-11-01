@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { TeamMember } from '../../data/teamMembers';
+import { resolveAssetPath } from '../../utils/introAnimation';
 
 export interface TeamPortraitProps {
   member: TeamMember;
@@ -22,12 +23,12 @@ export const TeamPortrait: React.FC<TeamPortraitProps> = ({
   imageClassName = '',
   priority = false,
 }) => {
-  const [currentSrc, setCurrentSrc] = useState<string>(member.image);
+  const [currentSrc, setCurrentSrc] = useState<string>(() => resolveAssetPath(member.image));
   const [triedFallback, setTriedFallback] = useState(false);
   const [hasFailedAll, setHasFailedAll] = useState(false);
 
   useEffect(() => {
-    setCurrentSrc(member.image);
+    setCurrentSrc(resolveAssetPath(member.image));
     setTriedFallback(false);
     setHasFailedAll(false);
   }, [member.image]);
@@ -36,10 +37,10 @@ export const TeamPortrait: React.FC<TeamPortraitProps> = ({
     if (
       !triedFallback &&
       member.fallbackImage &&
-      member.fallbackImage !== currentSrc
+      resolveAssetPath(member.fallbackImage) !== currentSrc
     ) {
       setTriedFallback(true);
-      setCurrentSrc(member.fallbackImage);
+      setCurrentSrc(resolveAssetPath(member.fallbackImage));
       return;
     }
     setHasFailedAll(true);

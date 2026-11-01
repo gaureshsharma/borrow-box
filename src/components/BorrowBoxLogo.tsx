@@ -249,7 +249,7 @@ export const BorrowBoxLogo: React.FC<BorrowBoxLogoProps> = ({
       </div>
       <div className="flex flex-col">
         <span className={`${textSize} text-[#F8FAFC]`}>
-          Borrow<span className="text-[#8B5CF6]">Box</span>
+          Borroow<span className="text-[#8B5CF6]">Box</span>
         </span>
         {showTagline && (
           <span className="text-[10px] uppercase font-semibold tracking-wider text-[#94A3B8] -mt-1">
@@ -260,3 +260,4 @@ export const BorrowBoxLogo: React.FC<BorrowBoxLogoProps> = ({
     </div>
   );
 };
+

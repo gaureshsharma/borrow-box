@@ -35,7 +35,7 @@ export const MarketplaceBenefits: React.FC<MarketplaceBenefitsProps> = ({
             <span>Circular Economy</span>
           </div>
           <h2 className="text-2xl sm:text-4xl font-bold tracking-tight text-[#F8FAFC]">
-            How BorrowBox Works
+            How BorroowBox Works
           </h2>
           <p className="text-xs sm:text-sm text-[#94A3B8]">
             Four simple steps to safely access or monetize gear in your community.
@@ -114,7 +114,7 @@ export const MarketplaceBenefits: React.FC<MarketplaceBenefitsProps> = ({
                 <span>For Renters</span>
               </div>
               <h3 className="text-xl sm:text-2xl font-bold text-white">
-                Why Rent on BorrowBox?
+                Why Rent on BorroowBox?
               </h3>
               <p className="text-xs sm:text-sm text-[#94A3B8]">
                 Get the exact professional gear you need for projects, shoots, and trips without committing to full retail prices.
@@ -184,7 +184,7 @@ export const MarketplaceBenefits: React.FC<MarketplaceBenefitsProps> = ({
                 <span>For Lenders</span>
               </div>
               <h3 className="text-xl sm:text-2xl font-bold text-white">
-                Why List on BorrowBox?
+                Why List on BorroowBox?
               </h3>
               <p className="text-xs sm:text-sm text-[#94A3B8]">
                 Equipment sits unused in closets 90% of the year. Put your belongings to work and earn regular extra income.

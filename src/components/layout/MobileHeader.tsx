@@ -144,7 +144,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
             handleMobileNavigate({ page: 'home' });
           }}
           className="inline-flex items-center min-h-[40px] shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8B5CF6] rounded-lg"
-          aria-label="BorrowBox Home"
+          aria-label="BorroowBox Home"
         >
           <BorrowBoxLogo
             symbolSize="2rem"
@@ -319,16 +319,11 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                 >
                   {/* Menu Top Bar with Clear Close Action */}
                   <div className="h-14 px-4 border-b border-white/[0.08] flex items-center justify-between gap-3 shrink-0">
-                    <div className="inline-flex items-center gap-1.5 text-sm font-bold text-[#F8FAFC]">
-                      <img
-                        src={BORROWBOX_TRANSPARENT_SYMBOL_ASSET_PATH}
-                        alt=""
-                        className="w-8 h-8 object-contain shrink-0 -mx-1"
-                      />
-                      <span>
-                        Borrow<span className="text-[#8B5CF6]">Box</span>
-                      </span>
-                    </div>
+                    <BorrowBoxLogo
+                      symbolSize="1.75rem"
+                      textSize="text-sm font-bold"
+                      idPrefix="mob-menu-logo"
+                    />
 
                     <button
                       type="button"

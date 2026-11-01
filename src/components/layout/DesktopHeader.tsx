@@ -195,7 +195,7 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
             handleNavigate({ page: 'home' });
           }}
           className="group focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8B5CF6] rounded-lg transition-transform duration-150 hover:opacity-95"
-          aria-label="BorrowBox Home"
+          aria-label="BorroowBox Home"
         >
           <BorrowBoxLogo
             symbolSize="2.35rem"
@@ -221,11 +221,10 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
                 e.preventDefault();
                 handleNavigate(item.route);
               }}
-              className={`inline-flex items-center gap-1.5 px-2.5 lg:px-3.5 py-2 rounded-lg transition-colors duration-150 whitespace-nowrap ${
-                active
+              className={`inline-flex items-center gap-1.5 px-2.5 lg:px-3.5 py-2 rounded-lg transition-colors duration-150 whitespace-nowrap ${active
                   ? 'text-[#F8FAFC] bg-white/[0.06] font-semibold'
                   : 'text-[#CBD5E1] hover:text-[#F8FAFC] hover:bg-white/[0.04]'
-              }`}
+                }`}
             >
               {item.id === 'list-item' && (
                 <Plus className="w-3.5 h-3.5 text-[#8B5CF6] shrink-0" />
@@ -243,17 +242,15 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
             aria-expanded={moreMenuOpen}
             aria-haspopup="menu"
             onClick={() => setMoreMenuOpen((prev) => !prev)}
-            className={`inline-flex items-center gap-1 px-2.5 lg:px-3.5 py-2 rounded-lg transition-colors duration-150 cursor-pointer whitespace-nowrap ${
-              moreMenuOpen || isMoreActive
+            className={`inline-flex items-center gap-1 px-2.5 lg:px-3.5 py-2 rounded-lg transition-colors duration-150 cursor-pointer whitespace-nowrap ${moreMenuOpen || isMoreActive
                 ? 'text-[#F8FAFC] bg-white/[0.06] font-semibold'
                 : 'text-[#CBD5E1] hover:text-[#F8FAFC] hover:bg-white/[0.04]'
-            }`}
+              }`}
           >
             <span>More</span>
             <ChevronDown
-              className={`w-3.5 h-3.5 text-[#64748B] transition-transform duration-150 ${
-                moreMenuOpen ? 'rotate-180 text-[#F8FAFC]' : ''
-              }`}
+              className={`w-3.5 h-3.5 text-[#64748B] transition-transform duration-150 ${moreMenuOpen ? 'rotate-180 text-[#F8FAFC]' : ''
+                }`}
             />
           </button>
 
@@ -304,11 +301,10 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
                           type="button"
                           role="menuitem"
                           onClick={() => handleNavigate(item.route)}
-                          className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 bb-btn-interactive cursor-pointer ${
-                            currentRoute.page === item.route.page
+                          className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 bb-btn-interactive cursor-pointer ${currentRoute.page === item.route.page
                               ? 'bg-[#1D293B] text-[#F8FAFC]'
                               : 'text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-[#1D293B]'
-                          }`}
+                            }`}
                         >
                           {SECONDARY_ITEM_ICONS[item.id]}
                           <span>{item.label}</span>
@@ -393,11 +389,10 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
             aria-label="Open quick search"
             aria-expanded={searchOpen}
             onClick={() => setSearchOpen((prev) => !prev)}
-            className={`inline-flex items-center justify-center gap-1.5 h-9 px-2.5 rounded-lg border text-xs font-medium bb-btn-interactive cursor-pointer ${
-              searchOpen || searchQuery
+            className={`inline-flex items-center justify-center gap-1.5 h-9 px-2.5 rounded-lg border text-xs font-medium bb-btn-interactive cursor-pointer ${searchOpen || searchQuery
                 ? 'bg-[#1D293B] border-[#8B5CF6]/40 text-[#F8FAFC]'
                 : 'bg-[#161E2E] border-white/[0.08] text-[#94A3B8] hover:text-[#F8FAFC] hover:border-white/[0.16]'
-            }`}
+              }`}
           >
             <Search className="w-3.5 h-3.5 text-[#8B5CF6] shrink-0" />
             <span className="hidden xl:inline max-w-[96px] truncate">
@@ -470,9 +465,8 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
           className="hidden lg:inline-flex relative items-center justify-center h-9 px-2.5 rounded-lg bg-[#161E2E] border border-white/[0.08] text-[#94A3B8] hover:text-[#F8FAFC] hover:border-white/[0.16] bb-btn-interactive cursor-pointer"
         >
           <Heart
-            className={`w-4 h-4 transition-transform duration-200 ${
-              wishlistCount > 0 ? 'fill-[#8B5CF6] text-[#8B5CF6] scale-110' : ''
-            }`}
+            className={`w-4 h-4 transition-transform duration-200 ${wishlistCount > 0 ? 'fill-[#8B5CF6] text-[#8B5CF6] scale-110' : ''
+              }`}
           />
           {wishlistCount > 0 && (
             <span className="ml-1.5 text-[11px] font-semibold text-[#F8FAFC] font-mono-tabular">
@@ -489,11 +483,10 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
               e.preventDefault();
               handleNavigate({ page: 'admin' });
             }}
-            className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold bb-btn-interactive whitespace-nowrap ${
-              currentRoute.page === 'admin'
+            className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold bb-btn-interactive whitespace-nowrap ${currentRoute.page === 'admin'
                 ? 'bg-[#8B5CF6] text-white'
                 : 'bg-[#8B5CF6]/15 text-[#F8FAFC] border border-[#8B5CF6]/35 hover:bg-[#8B5CF6]/25'
-            }`}
+              }`}
           >
             <Shield className="w-3.5 h-3.5 text-[#8B5CF6] shrink-0" />
             <span>Admin Panel</span>
@@ -509,11 +502,10 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
               aria-label={`Notifications (${unreadNotificationsCount} unread)`}
               aria-expanded={notificationsOpen}
               onClick={() => setNotificationsOpen((prev) => !prev)}
-              className={`relative inline-flex items-center justify-center h-9 px-2.5 rounded-lg border bb-btn-interactive cursor-pointer ${
-                notificationsOpen
+              className={`relative inline-flex items-center justify-center h-9 px-2.5 rounded-lg border bb-btn-interactive cursor-pointer ${notificationsOpen
                   ? 'bg-[#1D293B] border-[#8B5CF6]/45 text-[#F8FAFC]'
                   : 'bg-[#161E2E] border-white/[0.08] text-[#94A3B8] hover:text-[#F8FAFC] hover:border-white/[0.16]'
-              }`}
+                }`}
             >
               <Bell className="w-4 h-4 text-[#06B6D4]" />
               {unreadNotificationsCount > 0 && (
@@ -586,11 +578,10 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
                               onNavigate({ page: 'dashboard' });
                             }
                           }}
-                          className={`p-2.5 rounded-lg border transition-colors cursor-pointer ${
-                            notif.read
+                          className={`p-2.5 rounded-lg border transition-colors cursor-pointer ${notif.read
                               ? 'bg-[#111827]/60 border-white/[0.06] text-[#94A3B8] hover:border-white/[0.14]'
                               : 'bg-[#8B5CF6]/10 border-[#8B5CF6]/35 text-[#F8FAFC] hover:bg-[#8B5CF6]/15'
-                          }`}
+                            }`}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex items-center gap-1.5 min-w-0">
@@ -604,11 +595,11 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
                             <span className="text-[10px] font-mono text-[#64748B] shrink-0">
                               {notif.timestampISO
                                 ? new Date(
-                                    notif.timestampISO
-                                  ).toLocaleTimeString('en-IN', {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })
+                                  notif.timestampISO
+                                ).toLocaleTimeString('en-IN', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
                                 : ''}
                             </span>
                           </div>
@@ -641,13 +632,12 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
               aria-label={`Account menu for ${userProfile.name}`}
               aria-expanded={profileMenuOpen}
               onClick={() => setProfileMenuOpen((prev) => !prev)}
-              className={`inline-flex items-center gap-2 h-9 px-2.5 rounded-lg border bb-btn-interactive cursor-pointer ${
-                profileMenuOpen ||
-                currentRoute.page === 'profile' ||
-                currentRoute.page === 'dashboard'
+              className={`inline-flex items-center gap-2 h-9 px-2.5 rounded-lg border bb-btn-interactive cursor-pointer ${profileMenuOpen ||
+                  currentRoute.page === 'profile' ||
+                  currentRoute.page === 'dashboard'
                   ? 'bg-[#1D293B] border-[#8B5CF6]/45 text-[#F8FAFC]'
                   : 'bg-[#161E2E] border-white/[0.08] text-[#F8FAFC] hover:border-white/[0.16]'
-              }`}
+                }`}
             >
               <span className="w-5 h-5 rounded-full bg-[#8B5CF6] text-white text-[11px] font-bold flex items-center justify-center shrink-0">
                 {userProfile.name.charAt(0).toUpperCase()}
@@ -659,9 +649,8 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
                 <span className="w-2 h-2 rounded-full bg-[#06B6D4]" />
               )}
               <ChevronDown
-                className={`w-3.5 h-3.5 text-[#64748B] transition-transform duration-150 ${
-                  profileMenuOpen ? 'rotate-180' : ''
-                }`}
+                className={`w-3.5 h-3.5 text-[#64748B] transition-transform duration-150 ${profileMenuOpen ? 'rotate-180' : ''
+                  }`}
               />
             </button>
 
@@ -782,11 +771,10 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
               type="button"
               data-testid="desktop-login-button"
               onClick={() => handleNavigate({ page: 'login' })}
-              className={`h-9 px-3.5 rounded-lg text-xs font-semibold border transition-colors bb-btn-interactive cursor-pointer whitespace-nowrap ${
-                currentRoute.page === 'login'
+              className={`h-9 px-3.5 rounded-lg text-xs font-semibold border transition-colors bb-btn-interactive cursor-pointer whitespace-nowrap ${currentRoute.page === 'login'
                   ? 'bg-[#1D293B] border-[#8B5CF6]/45 text-[#F8FAFC]'
                   : 'bg-[#161E2E] hover:bg-[#1D293B] border-white/[0.08] hover:border-white/[0.16] text-[#F8FAFC]'
-              }`}
+                }`}
             >
               Login
             </button>
