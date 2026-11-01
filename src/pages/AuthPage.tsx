@@ -593,7 +593,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     >
                       Firebase Console
                     </a>
-                    , select your project &rarr; Authentication &rarr; Settings &rarr; Authorized domains, and add <strong className="text-[#F8FAFC] font-mono">gaureshsharma.github.io</strong>.
+                    , select your project &rarr; Authentication &rarr; Settings &rarr; Authorized domains, and add <strong className="text-[#F8FAFC] font-mono">borrow-box-src.vercel.app</strong>.
                   </p>
                 </div>
               )}

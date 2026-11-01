@@ -11,6 +11,8 @@ const FALLBACK_SUPABASE_URL = 'https://zgbjpizznlhoualuvada.supabase.co';
 const FALLBACK_SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpnYmpwaXp6bmxob3VhbHV2YWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MjA1MDAwMDAwMH0.anon_key';
 
+export const PRODUCTION_DOMAIN = 'https://borrow-box-src.vercel.app';
+
 export const supabaseUrl =
   (import.meta.env.VITE_SUPABASE_URL as string | undefined) || FALLBACK_SUPABASE_URL;
 
@@ -77,7 +79,7 @@ export function supabaseUserToProfile(
 export async function signInWithGoogleOAuth(options?: { redirectTo?: string }) {
   const redirectUri =
     options?.redirectTo ||
-    (typeof window !== 'undefined' ? window.location.origin : undefined);
+    (typeof window !== 'undefined' ? window.location.origin : PRODUCTION_DOMAIN);
 
   return supabase.auth.signInWithOAuth({
     provider: 'google',
