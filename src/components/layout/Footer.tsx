@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { BORROWBOX_TRANSPARENT_SYMBOL_ASSET_PATH } from '../../utils/introAnimation';
 import { BorrowBoxLogo } from '../BorrowBoxLogo';
 import { PageRoute } from '../Navbar';
@@ -49,7 +49,7 @@ const FooterComponent: React.FC<FooterProps> = ({ onNavigate }) => {
               href="/"
               onClick={(e) => handleLinkClick(e, { page: 'home' })}
               className="inline-flex items-center group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8B5CF6] rounded-lg"
-              aria-label="BorroowBox Home"
+              aria-label="BORROWBox Home"
             >
               <BorrowBoxLogo
                 symbolSize="2.5rem"
@@ -140,7 +140,7 @@ const FooterComponent: React.FC<FooterProps> = ({ onNavigate }) => {
 
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-white/[0.08] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-[#64748B]">
-          <p>© {new Date().getFullYear()} BorroowBox. All prices in ₹ (INR).</p>
+          <p>© {new Date().getFullYear()} BORROWBox. All prices in ₹ (INR).</p>
           <div className="space-y-0.5 text-left sm:text-right">
             <p className="font-semibold text-[#F8FAFC]">Available Across India</p>
             <p className="text-[11px] text-[#94A3B8]">

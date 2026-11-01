@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   ArrowLeft,
   Compass,
@@ -118,7 +118,7 @@ export const AboutUsPage: React.FC<AboutUsPageProps> = ({ onNavigate }) => {
           </button>
 
           <span className="text-[11px] font-mono uppercase tracking-wider text-[#A78BFA]">
-            BorroowBox · Editorial
+            BORROWBox · Editorial
           </span>
         </div>
 
@@ -147,7 +147,7 @@ export const AboutUsPage: React.FC<AboutUsPageProps> = ({ onNavigate }) => {
               </h1>
 
               <p className="text-base sm:text-xl text-[#94A3B8] max-w-2xl leading-relaxed">
-                BorroowBox makes it easier to access the things you need and earn
+                BORROWBox makes it easier to access the things you need and earn
                 from the things you already own.
               </p>
 
@@ -293,7 +293,7 @@ export const AboutUsPage: React.FC<AboutUsPageProps> = ({ onNavigate }) => {
             {/* Story Content */}
             <div className="lg:col-span-7 order-1 lg:order-2 space-y-6">
               <span className="text-xs font-mono uppercase tracking-wider text-[#A78BFA]">
-                The Concept Behind BorroowBox
+                The Concept Behind BORROWBox
               </span>
 
               <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#F8FAFC]">
@@ -320,7 +320,7 @@ export const AboutUsPage: React.FC<AboutUsPageProps> = ({ onNavigate }) => {
                   Connecting People Who Need With People Who Own
                 </h4>
                 <p className="text-xs text-[#CBD5E1] leading-relaxed">
-                  BorroowBox bridges this gap. We provide the digital
+                  BORROWBox bridges this gap. We provide the digital
                   verification infrastructure, calendar booking, handover
                   verification codes, and security deposit escrow that enable
                   neighbors to share resources with total confidence.
@@ -399,7 +399,7 @@ export const AboutUsPage: React.FC<AboutUsPageProps> = ({ onNavigate }) => {
               Tangible Value
             </span>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#F8FAFC]">
-              Why Choose BorroowBox?
+              Why Choose BORROWBox?
             </h2>
             <p className="text-sm text-[#94A3B8]">
               Engineered from the ground up for transparent, safe, peer-to-peer
@@ -505,7 +505,7 @@ export const AboutUsPage: React.FC<AboutUsPageProps> = ({ onNavigate }) => {
               aria-hidden="true"
             />
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#F8FAFC]">
-              Make More Possible with BorroowBox.
+              Make More Possible with BORROWBox.
             </h2>
             <p className="text-sm sm:text-base text-[#94A3B8] max-w-xl mx-auto leading-relaxed">
               Join thousands of neighbors across Indian cities discovering the

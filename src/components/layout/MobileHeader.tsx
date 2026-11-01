@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Bell,
@@ -144,7 +144,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
             handleMobileNavigate({ page: 'home' });
           }}
           className="inline-flex items-center min-h-[40px] shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8B5CF6] rounded-lg"
-          aria-label="BorroowBox Home"
+          aria-label="BORROWBox Home"
         >
           <BorrowBoxLogo
             symbolSize="2rem"

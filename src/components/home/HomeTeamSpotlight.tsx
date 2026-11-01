@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { ArrowRight, Sparkles, Users } from 'lucide-react';
 import { PageRoute } from '../Navbar';
 import { TEAM_IMAGE_MAP } from '../../assets/teamImageRegistry';
@@ -61,13 +61,13 @@ export const HomeTeamSpotlight: React.FC<HomeTeamSpotlightProps> = ({ onNavigate
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#161E2E] border border-white/[0.08] text-xs font-semibold text-[#A78BFA] mb-3">
               <Users className="w-3.5 h-3.5" />
-              <span>THE BORROOWBOX TEAM</span>
+              <span>THE BORROWBOX TEAM</span>
             </div>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#F8FAFC] tracking-tight">
-              Meet the People Behind BorroowBox
+              Meet the People Behind BORROWBox
             </h2>
             <p className="text-xs sm:text-sm text-[#94A3B8] mt-1.5 max-w-xl">
-              Behind BorroowBox is a dedicated team working to make everyday products accessible through peer rentals.
+              Behind BORROWBox is a dedicated team working to make everyday products accessible through peer rentals.
             </p>
           </div>
 

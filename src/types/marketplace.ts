@@ -272,6 +272,7 @@ export interface BorrowBoxUserProfile {
   createdAtISO: string;
   updatedAtISO: string;
   isAdmin: boolean;
+  role?: 'super_admin' | 'admin' | 'moderator' | 'support_admin' | 'user' | string;
 }
 
 export interface ProfileUpdateInput {

@@ -44,6 +44,12 @@ import {
   updateListingInFirestore,
   verifyAndLoadAdminSession,
 } from './services/firebase';
+import {
+  supabase,
+  supabaseUserToProfile,
+  signOutSupabase,
+} from './services/supabase';
+import { isSuperAdminEmail } from './utils/adminRbac';
 import { Navbar, PageRoute } from './components/Navbar';
 import { Footer, FooterInfoPageKey } from './components/layout/Footer';
 import { HomePage } from './pages/HomePage';
@@ -475,17 +481,66 @@ export default function App() {
           activeMode: 'renter',
           createdAtISO: fallbackNow,
           updatedAtISO: fallbackNow,
-          isAdmin:
-            (fbUser.email || '').trim().toLowerCase() ===
-              'marukrutarth@gmail.com' ||
-            (fbUser.email || '').trim().toLowerCase() ===
-              'gaureshsharma@gmail.com',
+          isAdmin: isSuperAdminEmail(fbUser.email),
+          role: isSuperAdminEmail(fbUser.email) ? 'super_admin' : 'user',
         });
       } finally {
         setIsAuthLoading(false);
       }
     });
     return () => unsubscribe();
+  }, []);
+
+  // Supabase Authentication state listener & initial session recovery
+  useEffect(() => {
+    const handleSupabaseUser = (sbUser: any) => {
+      const profile = supabaseUserToProfile(sbUser);
+      setUserProfile(profile);
+      const pseudoUser = {
+        uid: sbUser.id,
+        email: sbUser.email,
+        displayName: profile.name,
+        photoURL: profile.photoURL || null,
+      } as unknown as User;
+      setFirebaseUser(pseudoUser);
+      setIsAuthLoading(false);
+
+      if (isSuperAdminEmail(sbUser.email)) {
+        setVerifiedAdminRecord({
+          id: sbUser.email!,
+          uid: sbUser.id,
+          email: sbUser.email!,
+          name: profile.name,
+          role: 'super_admin',
+          status: 'active',
+          customPermissions: [],
+          revokedPermissions: [],
+          grantedBy: sbUser.email!,
+          grantedAtISO: new Date().toISOString(),
+          lastLoginAtISO: new Date().toISOString(),
+          updatedAtISO: new Date().toISOString(),
+        });
+        setAdminAccessDeniedReason(null);
+      }
+    };
+
+    // Check initial session (e.g. returning from Google OAuth redirect)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        handleSupabaseUser(session.user);
+      }
+    });
+
+    // Listen to changes (e.g. sign in, token refreshed)
+    const { data: authSub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        handleSupabaseUser(session.user);
+      }
+    });
+
+    return () => {
+      authSub?.subscription?.unsubscribe();
+    };
   }, []);
 
   // Real-time administrator verification & live revocation listener whenever firebaseUser changes
@@ -846,6 +901,7 @@ export default function App() {
   };
 
   const handleLogout = async () => {
+    await signOutSupabase();
     await signOutUser();
     setUserProfile(null);
     setVerifiedAdminRecord(null);
@@ -871,12 +927,31 @@ export default function App() {
         photoURL: profile.photoURL || null,
       } as unknown as User);
     setFirebaseUser(activeUser);
+
+    if (isSuperAdminEmail(profile.email)) {
+      setVerifiedAdminRecord({
+        id: profile.email,
+        uid: profile.uid,
+        email: profile.email,
+        name: profile.name,
+        role: 'super_admin',
+        status: 'active',
+        customPermissions: [],
+        revokedPermissions: [],
+        grantedBy: profile.email,
+        grantedAtISO: new Date().toISOString(),
+        lastLoginAtISO: new Date().toISOString(),
+        updatedAtISO: new Date().toISOString(),
+      });
+      setAdminAccessDeniedReason(null);
+    }
+
     setIsVerifyingAdminSession(true);
     void verifyAndLoadAdminSession(activeUser).then((res) => {
       if (res.authorized && res.adminRecord) {
         setVerifiedAdminRecord(res.adminRecord);
         setAdminAccessDeniedReason(null);
-      } else {
+      } else if (!isSuperAdminEmail(profile.email)) {
         setVerifiedAdminRecord(null);
         setAdminAccessDeniedReason(res.reason || null);
       }

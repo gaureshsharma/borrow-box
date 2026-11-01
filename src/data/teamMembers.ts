@@ -1,4 +1,4 @@
-export type TeamMemberCategory = 'guide' | 'founder' | 'contributor';
+﻿export type TeamMemberCategory = 'guide' | 'founder' | 'contributor';
 
 /**
  * Easy-to-replace image path constant for the Technical Lead profile.
@@ -39,17 +39,17 @@ export interface TeamPageContent {
 export const TEAM_PAGE_CONTENT: TeamPageContent = {
   intro: {
     eyebrow: 'OUR TEAM',
-    heading: 'Meet the People Behind BorroowBox',
+    heading: 'Meet the People Behind BORROWBox',
     description:
-      'Behind every great idea is a team working to bring it to life. Meet the people building BorroowBox.',
+      'Behind every great idea is a team working to bring it to life. Meet the people building BORROWBox.',
   },
   sections: {
     guideHeading: 'Project Guide',
     guideSupportingText:
-      'Academic mentorship and project-level guidance shaping BorroowBox.',
+      'Academic mentorship and project-level guidance shaping BORROWBox.',
     foundersHeading: 'The Founding Team',
     foundersSupportingText:
-      'Four people, one shared vision. Meet the team building BorroowBox.',
+      'Four people, one shared vision. Meet the team building BORROWBox.',
     contributorHeading: 'Technical Lead',
     contributorSupportingText:
       'Full-stack architecture, frontend, backend and database engineering.',
@@ -91,7 +91,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
     designation: 'Co-Founder',
     image: '/founder-1.png',
     fallbackImage: '/images/founder-1.png',
-    bio: "Contributing to BorroowBox's vision of making everyday products accessible through a smarter and more convenient rental marketplace.",
+    bio: "Contributing to BORROWBox's vision of making everyday products accessible through a smarter and more convenient rental marketplace.",
     category: 'founder',
     groupLabel: 'The Founding Team',
   },
@@ -103,7 +103,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
     designation: 'Co-Founder',
     image: '/founder-2.png',
     fallbackImage: '/images/founder-2.png',
-    bio: 'Helping shape BorroowBox into a practical marketplace built around accessibility, convenience and community.',
+    bio: 'Helping shape BORROWBox into a practical marketplace built around accessibility, convenience and community.',
     category: 'founder',
     groupLabel: 'The Founding Team',
   },
@@ -127,7 +127,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
     designation: 'Co-Founder',
     image: '/founder-4.png',
     fallbackImage: '/images/founder-4.png',
-    bio: "Helping establish BorroowBox's foundation and build a marketplace where access matters more than ownership.",
+    bio: "Helping establish BORROWBox's foundation and build a marketplace where access matters more than ownership.",
     category: 'founder',
     groupLabel: 'The Founding Team',
   },
@@ -139,7 +139,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
     designation: 'Technical Lead',
     image: TECHNICAL_LEAD_IMAGE_PATH,
     fallbackImage: '/images/contributor.jpg',
-    bio: "Leading BorroowBox's technical development, including its architecture, frontend, backend and database integrations.",
+    bio: "Leading BORROWBox's technical development, including its architecture, frontend, backend and database integrations.",
     category: 'contributor',
     groupLabel: 'Technical Lead',
     isTemporaryPhoto: false,

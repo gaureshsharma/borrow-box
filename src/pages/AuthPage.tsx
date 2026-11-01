@@ -31,6 +31,12 @@ import {
   signInWithGooglePopup,
   verifyPhoneOtpAndLogin,
 } from '../services/firebase';
+import {
+  supabase,
+  signInWithGoogleOAuth,
+  signUpWithSupabase,
+  signInWithSupabase,
+} from '../services/supabase';
 import { PageRoute } from '../components/Navbar';
 import { BorrowBoxLogo } from '../components/BorrowBoxLogo';
 
@@ -48,14 +54,6 @@ function formatFirebaseAuthError(error: unknown): {
   needsDomainAuthGuide: boolean;
 } {
   const raw = error instanceof Error ? error.message : String(error);
-  if (raw.includes('auth/unauthorized-domain')) {
-    return {
-      message:
-        'Google OAuth sign-in is restricted on this domain by Google. Please sign in or create an account using Email & Password or Mobile OTP below.',
-      needsEmailProviderEnable: false,
-      needsDomainAuthGuide: false,
-    };
-  }
   if (raw.includes('auth/operation-not-allowed')) {
     return {
       message:
@@ -297,7 +295,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     setIsLoading(true);
     try {
       if (viewMode === 'signup') {
-        const profile = await registerWithEmailAndProfile({
+        const profile = await signUpWithSupabase({
           fullName: fullName.trim(),
           email: email.trim(),
           password,
@@ -309,7 +307,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         setStatusMessage('Account registered successfully! Redirecting...');
         onAuthenticated(profile);
       } else {
-        const profile = await signInWithEmail(email.trim(), password);
+        const profile = await signInWithSupabase(email.trim(), password);
         setStatusMessage('Signed in successfully! Redirecting...');
         onAuthenticated(profile);
       }
@@ -330,8 +328,21 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     setShowDomainAuthGuide(false);
     setIsGoogleLoading(true);
     try {
-      const profile = await signInWithGooglePopup();
-      onAuthenticated(profile);
+      // Wire "Continue with Google" to call supabase.auth.signInWithOAuth
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+      if (error) {
+        throw error;
+      }
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        setStatusMessage('Redirecting to Google Sign-In...');
+      }
     } catch (err) {
       const formatted = formatFirebaseAuthError(err);
       setAuthError(formatted.message);
@@ -415,7 +426,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#94A3B8] hover:text-[#8B5CF6] mb-6 cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          Back to BorroowBox Home
+          Back to BorrowBox Home
         </button>
 
         {redirectReason && (
@@ -444,8 +455,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 : authMethod === 'phone'
                 ? 'Sign In with Mobile OTP'
                 : viewMode === 'login'
-                ? 'Log In to BorroowBox'
-                : 'Create Your BorroowBox Account'}
+                ? 'Log In to BorrowBox'
+                : 'Create Your BorrowBox Account'}
             </h1>
             <p className="text-xs text-[#94A3B8] mt-1 max-w-sm">
               {viewMode === 'reset'

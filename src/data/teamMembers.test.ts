@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   TEAM_MEMBERS,
@@ -14,17 +14,17 @@ test('TEAM_PAGE_CONTENT matches exact section headings and supporting copy', () 
   assert.equal(TEAM_PAGE_CONTENT.intro.eyebrow, 'OUR TEAM');
   assert.equal(
     TEAM_PAGE_CONTENT.intro.heading,
-    'Meet the People Behind BorroowBox'
+    'Meet the People Behind BORROWBox'
   );
   assert.equal(
     TEAM_PAGE_CONTENT.intro.description,
-    'Behind every great idea is a team working to bring it to life. Meet the people building BorroowBox.'
+    'Behind every great idea is a team working to bring it to life. Meet the people building BORROWBox.'
   );
   assert.equal(TEAM_PAGE_CONTENT.sections.guideHeading, 'Project Guide');
   assert.equal(TEAM_PAGE_CONTENT.sections.foundersHeading, 'The Founding Team');
   assert.equal(
     TEAM_PAGE_CONTENT.sections.foundersSupportingText,
-    'Four people, one shared vision. Meet the team building BorroowBox.'
+    'Four people, one shared vision. Meet the team building BORROWBox.'
   );
   assert.equal(TEAM_PAGE_CONTENT.sections.contributorHeading, 'Technical Lead');
 });
@@ -46,7 +46,7 @@ test('TEAM_MEMBERS contains all 6 profiles in exact sequence: Project Guide -> 4
       name: 'Bhumika Khajuria',
       role: 'Co-Founder',
       image: '/founder-1.png',
-      bio: "Contributing to BorroowBox's vision of making everyday products accessible through a smarter and more convenient rental marketplace.",
+      bio: "Contributing to BORROWBox's vision of making everyday products accessible through a smarter and more convenient rental marketplace.",
       category: 'founder',
     },
     {
@@ -54,7 +54,7 @@ test('TEAM_MEMBERS contains all 6 profiles in exact sequence: Project Guide -> 4
       name: 'Lipi Gupta',
       role: 'Co-Founder',
       image: '/founder-2.png',
-      bio: 'Helping shape BorroowBox into a practical marketplace built around accessibility, convenience and community.',
+      bio: 'Helping shape BORROWBox into a practical marketplace built around accessibility, convenience and community.',
       category: 'founder',
     },
     {
@@ -70,7 +70,7 @@ test('TEAM_MEMBERS contains all 6 profiles in exact sequence: Project Guide -> 4
       name: 'Gauresh Sharma',
       role: 'Co-Founder',
       image: '/founder-4.png',
-      bio: "Helping establish BorroowBox's foundation and build a marketplace where access matters more than ownership.",
+      bio: "Helping establish BORROWBox's foundation and build a marketplace where access matters more than ownership.",
       category: 'founder',
     },
     {
@@ -78,7 +78,7 @@ test('TEAM_MEMBERS contains all 6 profiles in exact sequence: Project Guide -> 4
       name: 'Krutarth Maru',
       role: 'Technical Lead',
       image: '/contributor.jpg',
-      bio: "Leading BorroowBox's technical development, including its architecture, frontend, backend and database integrations.",
+      bio: "Leading BORROWBox's technical development, including its architecture, frontend, backend and database integrations.",
       category: 'contributor',
     },
   ];

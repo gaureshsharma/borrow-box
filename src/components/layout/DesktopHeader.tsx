@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import {
   Bell,
   Check,
@@ -195,7 +195,7 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
             handleNavigate({ page: 'home' });
           }}
           className="group focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8B5CF6] rounded-lg transition-transform duration-150 hover:opacity-95"
-          aria-label="BorroowBox Home"
+          aria-label="BORROWBox Home"
         >
           <BorrowBoxLogo
             symbolSize="2.35rem"

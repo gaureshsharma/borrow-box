@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 import {
   CategoryName,
   IndianCity,
@@ -171,7 +171,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       {/* 4. How BorrowBox Works + 5. Benefits of Renting + 6. Benefits of Listing Items */}
       <MarketplaceBenefits onNavigate={onNavigate} />
 
-      {/* Meet the BorroowBox Team Section */}
+      {/* Meet the BORROWBox Team Section */}
       <HomeTeamSpotlight onNavigate={onNavigate} />
 
       {/* 7. Become a Lender CTA */}

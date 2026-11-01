@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   BORROWBOX_TRANSPARENT_SYMBOL_ASSET_PATH,
@@ -549,7 +549,7 @@ export const BorrowBoxIntro: React.FC<BorrowBoxIntroProps> = ({
               className="mt-3 flex flex-col items-center text-center"
             >
               <div className="flex items-center tracking-[0.22em] text-xl sm:text-2xl font-extrabold uppercase text-[#F8FAFC] pl-[0.22em]">
-                <span>BORROOW</span>
+                <span>BORROW</span>
                 <span className="bg-gradient-to-r from-[#A78BFA] via-[#8B5CF6] to-[#06B6D4] bg-clip-text text-transparent">
                   BOX
                 </span>

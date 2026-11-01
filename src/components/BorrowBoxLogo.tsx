@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 interface BorrowBoxSymbolProps {
   className?: string;
@@ -249,7 +249,7 @@ export const BorrowBoxLogo: React.FC<BorrowBoxLogoProps> = ({
       </div>
       <div className="flex flex-col">
         <span className={`${textSize} text-[#F8FAFC]`}>
-          Borroow<span className="text-[#8B5CF6]">Box</span>
+          BORROW<span className="text-[#8B5CF6]">Box</span>
         </span>
         {showTagline && (
           <span className="text-[10px] uppercase font-semibold tracking-wider text-[#94A3B8] -mt-1">
