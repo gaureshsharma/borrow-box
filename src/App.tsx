@@ -961,6 +961,8 @@ export default function App() {
       const target = pendingProtectedRoute;
       setPendingProtectedRoute(null);
       handleNavigate(target);
+    } else if (isSuperAdminEmail(profile.email)) {
+      handleNavigate({ page: 'admin' });
     } else {
       handleNavigate({ page: 'dashboard' });
     }

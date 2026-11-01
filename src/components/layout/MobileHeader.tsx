@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Bell,
@@ -94,10 +94,13 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   const [isCityModalOpen, setIsCityModalOpen] = useState(false);
   const prefersReducedMotion = useReducedMotion();
 
-  const hasVerifiedAdminAccess = shouldShowAdminPanelOption(verifiedAdminRecord);
+  const hasVerifiedAdminAccess =
+    shouldShowAdminPanelOption(verifiedAdminRecord) || Boolean(userProfile?.isAdmin);
   const adminRoleLabel =
     hasVerifiedAdminAccess && verifiedAdminRecord
       ? ROLE_DEFINITIONS[verifiedAdminRecord.role]?.label || 'Administrator'
+      : userProfile?.isAdmin
+      ? 'Super Admin'
       : null;
 
   useEffect(() => {

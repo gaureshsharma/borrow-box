@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Bell,
   Check,
@@ -103,10 +103,13 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
   const profileRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
-  const hasVerifiedAdminAccess = shouldShowAdminPanelOption(verifiedAdminRecord);
+  const hasVerifiedAdminAccess =
+    shouldShowAdminPanelOption(verifiedAdminRecord) || Boolean(userProfile?.isAdmin);
   const adminRoleLabel =
     hasVerifiedAdminAccess && verifiedAdminRecord
       ? ROLE_DEFINITIONS[verifiedAdminRecord.role]?.label || 'Administrator'
+      : userProfile?.isAdmin
+      ? 'Super Admin'
       : null;
 
   const categoryItems = getCategoryDropdownItems();

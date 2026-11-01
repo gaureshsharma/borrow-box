@@ -934,22 +934,24 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
-            {shouldShowAdminPanelOption(verifiedAdminRecord) &&
-              verifiedAdminRecord && (
-                <button
-                  type="button"
-                  onClick={() => onNavigate({ page: 'admin' })}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#8B5CF6]/15 hover:bg-[#8B5CF6]/25 text-[#F8FAFC] border border-[#8B5CF6]/40 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#8B5CF6]" />
-                  <span>
-                    Admin Panel (
-                    {ROLE_DEFINITIONS[verifiedAdminRecord.role]?.label ||
-                      'Admin'}
-                    )
-                  </span>
-                </button>
-              )}
+            {(shouldShowAdminPanelOption(verifiedAdminRecord) ||
+              userProfile.isAdmin) && (
+              <button
+                type="button"
+                onClick={() => onNavigate({ page: 'admin' })}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#8B5CF6]/15 hover:bg-[#8B5CF6]/25 text-[#F8FAFC] border border-[#8B5CF6]/40 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-[#8B5CF6]" />
+                <span>
+                  Admin Panel (
+                  {verifiedAdminRecord
+                    ? ROLE_DEFINITIONS[verifiedAdminRecord.role]?.label ||
+                      'Admin'
+                    : 'Super Admin'}
+                  )
+                </span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => onNavigate({ page: 'profile' })}
@@ -968,6 +970,30 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Super Admin Notice Banner - strictly for administrators */}
+        {userProfile.isAdmin && (
+          <div className="p-4 rounded-xl bg-gradient-to-r from-[#8B5CF6]/20 via-[#6366F1]/15 to-transparent border border-[#8B5CF6]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <ShieldCheck className="w-5 h-5 text-[#A78BFA] shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-[#F8FAFC]">
+                  Super Admin Console Available
+                </p>
+                <p className="text-xs text-[#94A3B8]">
+                  You are recognized as a Platform Administrator with full access to moderation, users, and financial reports.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate({ page: 'admin' })}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer self-start sm:self-auto shrink-0"
+            >
+              <span>Open Admin Console</span>
+            </button>
+          </div>
+        )}
 
         {/* Animated Top Statistics Strip */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
