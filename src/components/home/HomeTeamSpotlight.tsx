@@ -43,6 +43,13 @@ const FEATURED_MEMBERS = [
     tag: 'Founder',
     image: TEAM_IMAGE_MAP['founder-2'],
   },
+  {
+    id: 'contributor',
+    name: 'Krutarth Maru',
+    role: 'Technical Lead',
+    tag: 'Tech Lead',
+    image: TEAM_IMAGE_MAP['contributor'],
+  },
 ];
 
 export const HomeTeamSpotlight: React.FC<HomeTeamSpotlightProps> = ({ onNavigate }) => {
@@ -77,8 +84,8 @@ export const HomeTeamSpotlight: React.FC<HomeTeamSpotlightProps> = ({ onNavigate
           </button>
         </div>
 
-        {/* 5-Column Grid on Desktop, 2x3 on Tablet/Mobile */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-5">
+        {/* 6-Column Grid on Desktop, 3 on Tablet, 2 on Mobile */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5">
           {FEATURED_MEMBERS.map((member) => (
             <div
               key={member.id}
@@ -120,4 +127,3 @@ export const HomeTeamSpotlight: React.FC<HomeTeamSpotlightProps> = ({ onNavigate
     </section>
   );
 };
-

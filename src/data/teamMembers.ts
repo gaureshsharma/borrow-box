@@ -142,7 +142,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
     bio: "Leading BorroowBox's technical development, including its architecture, frontend, backend and database integrations.",
     category: 'contributor',
     groupLabel: 'Technical Lead',
-    isTemporaryPhoto: true,
+    isTemporaryPhoto: false,
   },
 ];
 
