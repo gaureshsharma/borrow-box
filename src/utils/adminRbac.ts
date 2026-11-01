@@ -59,8 +59,6 @@ export const PRIMARY_SUPER_ADMIN_EMAIL = 'gaureshsharma6@gmail.com';
 export const SUPER_ADMIN_EMAILS = [
   'gaureshsharma6@gmail.com',
   'gaureshsharma@gmail.com',
-  'harsh.9473raj@gmail.com',
-  'marukrutarth@gmail.com',
 ];
 
 export function isSuperAdminEmail(email?: string | null): boolean {
