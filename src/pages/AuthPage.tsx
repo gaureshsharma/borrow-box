@@ -36,6 +36,7 @@ import {
   signUpWithSupabase,
   signInWithSupabase,
   mapSupabaseSessionToUser,
+  extractUserFromOAuthRedirect,
 } from '../services/supabase';
 import { PageRoute } from '../components/Navbar';
 import { BorrowBoxLogo } from '../components/BorrowBoxLogo';
@@ -361,12 +362,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       }
     } else if (hashParams.get('access_token') || searchParams.get('code')) {
       setStatusMessage('Signed in with Google! Preparing your BorrowBox dashboard...');
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session?.user) {
-          const profile = mapSupabaseSessionToUser(session.user);
-          onAuthenticated(profile);
-        }
-      }).catch(() => {});
+      const direct = extractUserFromOAuthRedirect();
+      if (direct.user) {
+        onAuthenticated(direct.user);
+      } else {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session?.user) {
+            const profile = mapSupabaseSessionToUser(session.user);
+            onAuthenticated(profile);
+          }
+        }).catch(() => {});
+      }
     }
   }, []);
 

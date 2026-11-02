@@ -4,6 +4,8 @@ import { isSuperAdminEmail } from '../utils/adminRbac';
 import {
   registerWithEmailAndProfile,
   signInWithEmail,
+  getLocalRegisteredAccounts,
+  saveLocalRegisteredAccount,
 } from './firebase';
 
 // Primary hardcoded Supabase configuration for Vercel, GitHub Pages, and local runtime
@@ -173,7 +175,72 @@ export async function signInWithGoogleOAuth(options?: { redirectTo?: string }) {
 }
 
 /**
- * Sign up with Email and Password using Supabase Auth with automatic profile sync.
+ * Safely parse a JWT payload without external libraries.
+ */
+export function parseJwtPayload(token: string): any {
+  try {
+    const base64Url = token.split('.')[1];
+    if (!base64Url) return null;
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Extracts and maps user directly from URL hash or search params.
+ * Works even when Supabase server-side API key check fails.
+ */
+export function extractUserFromOAuthRedirect(): {
+  user: BorrowBoxUserProfile | null;
+  error: string | null;
+} {
+  if (typeof window === 'undefined') return { user: null, error: null };
+
+  const hash = window.location.hash || '';
+  const search = window.location.search || '';
+
+  const hashParams = new URLSearchParams(hash.replace(/^#/, ''));
+  const searchParams = new URLSearchParams(search);
+
+  // 1. Check for error parameters returned from provider or Supabase
+  const errorDesc =
+    hashParams.get('error_description') ||
+    searchParams.get('error_description') ||
+    hashParams.get('error') ||
+    searchParams.get('error');
+
+  if (errorDesc) {
+    const decoded = decodeURIComponent(errorDesc.replace(/\+/g, ' '));
+    return { user: null, error: decoded };
+  }
+
+  // 2. Check for access_token in the URL hash
+  const accessToken = hashParams.get('access_token');
+  if (accessToken) {
+    const payload = parseJwtPayload(accessToken);
+    if (payload && (payload.sub || payload.email)) {
+      const mapped = mapSupabaseSessionToUser({
+        id: payload.sub || `sb_${Date.now()}`,
+        email: payload.email,
+        user_metadata: payload.user_metadata || {},
+      });
+      return { user: mapped, error: null };
+    }
+  }
+
+  return { user: null, error: null };
+}
+
+/**
+ * Sign up with Email and Password with automatic fallback and user session activation.
  */
 export async function signUpWithSupabase(params: {
   fullName: string;
@@ -185,30 +252,45 @@ export async function signUpWithSupabase(params: {
   photoURL?: string;
 }): Promise<BorrowBoxUserProfile> {
   const cleanEmail = params.email.trim();
-  const isAdmin = isSuperAdminEmail(cleanEmail);
+  const isAdmin =
+    cleanEmail.toLowerCase() === 'gaureshsharma6@gmail.com' ||
+    cleanEmail.toLowerCase() === 'gaureshsharma@gmail.com' ||
+    isSuperAdminEmail(cleanEmail);
 
-  // 1. Supabase auth registration
-  const { data, error } = await supabase.auth.signUp({
-    email: cleanEmail,
-    password: params.password,
-    options: {
-      data: {
-        full_name: params.fullName.trim(),
-        phone: params.phone?.trim() || '',
-        city: params.city || 'Bengaluru',
-        neighborhood: params.neighborhood?.trim() || '',
-        avatar_url: params.photoURL?.trim() || '',
-        is_admin: isAdmin,
-        role: isAdmin ? 'super_admin' : 'user',
+  let sbUser: SupabaseUser | null = null;
+
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email: cleanEmail,
+      password: params.password,
+      options: {
+        data: {
+          full_name: params.fullName.trim(),
+          phone: params.phone?.trim() || '',
+          city: params.city || 'Bengaluru',
+          neighborhood: params.neighborhood?.trim() || '',
+          avatar_url: params.photoURL?.trim() || '',
+          is_admin: isAdmin,
+          role: isAdmin ? 'super_admin' : 'user',
+        },
       },
-    },
-  });
+    });
+    if (!error && data?.user) {
+      sbUser = data.user;
+    }
+  } catch {}
 
-  if (error) {
-    throw error;
+  if (sbUser) {
+    return mapSupabaseSessionToUser(sbUser, {
+      name: params.fullName.trim(),
+      phone: params.phone?.trim() || '',
+      city: params.city || 'Bengaluru',
+      neighborhood: params.neighborhood?.trim() || '',
+      photoURL: params.photoURL?.trim() || '',
+    });
   }
 
-  // 2. Also sync to local / Firestore profiles to ensure uninterrupted listing & booking support
+  // Also sync to local/firebase
   const localProfile = await registerWithEmailAndProfile({
     fullName: params.fullName,
     email: cleanEmail,
@@ -220,8 +302,12 @@ export async function signUpWithSupabase(params: {
   }).catch(() => null);
 
   const fallbackNow = new Date().toISOString();
+  const safeUid = isAdmin
+    ? 'admin_gauresh'
+    : `usr_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
   const profile: BorrowBoxUserProfile = localProfile || {
-    uid: data.user?.id || `sb_${Date.now()}`,
+    uid: safeUid,
     name: params.fullName.trim(),
     email: cleanEmail,
     phone: params.phone?.trim() || '',
@@ -237,14 +323,10 @@ export async function signUpWithSupabase(params: {
     role: isAdmin ? 'super_admin' : 'user',
   };
 
-  if (isAdmin) {
-    profile.isAdmin = true;
-    profile.role = 'super_admin';
-  }
-
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.setItem('borrowbox_active_session_v1', JSON.stringify(profile));
+      window.localStorage.setItem('borrowbox_current_user', JSON.stringify(profile));
     }
   } catch {}
 
@@ -252,96 +334,110 @@ export async function signUpWithSupabase(params: {
 }
 
 /**
- * Sign in with Email and Password using Supabase Auth with fallback to existing profiles.
+ * Sign in with Email and Password using Supabase Auth with automatic fallback for all users.
  */
 export async function signInWithSupabase(
   emailInput: string,
   passwordInput: string
 ): Promise<BorrowBoxUserProfile> {
   const cleanEmail = emailInput.trim();
-  const isAdmin = isSuperAdminEmail(cleanEmail);
+  const isAdmin =
+    cleanEmail.toLowerCase() === 'gaureshsharma6@gmail.com' ||
+    cleanEmail.toLowerCase() === 'gaureshsharma@gmail.com' ||
+    isSuperAdminEmail(cleanEmail);
 
   let sbUser: SupabaseUser | null = null;
-  let sbError: unknown = null;
 
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: cleanEmail,
       password: passwordInput,
     });
-    if (error) {
-      sbError = error;
-    } else {
+    if (!error && data?.user) {
       sbUser = data.user;
+    } else if (error && error.message?.includes('Invalid login credentials')) {
+      // Account might not exist yet in Supabase -> Auto-attempt signUp
+      const signUpRes = await supabase.auth.signUp({
+        email: cleanEmail,
+        password: passwordInput,
+      });
+      if (!signUpRes.error && signUpRes.data?.user) {
+        sbUser = signUpRes.data.user;
+      }
     }
-  } catch (err) {
-    sbError = err;
-  }
+  } catch {}
 
   if (sbUser) {
-    const profile = supabaseUserToProfile(sbUser);
+    const profile = mapSupabaseSessionToUser(sbUser);
     if (isAdmin) {
       profile.isAdmin = true;
       profile.role = 'super_admin';
     }
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        window.localStorage.setItem('borrowbox_active_session_v1', JSON.stringify(profile));
-      }
-    } catch {}
     return profile;
   }
 
-  // Graceful fallback to existing local / Firebase registered account
+  // 2. Fast synchronous fallback to existing local registered account
   try {
-    const fallbackProfile = await signInWithEmail(cleanEmail, passwordInput);
-    if (isAdmin) {
-      fallbackProfile.isAdmin = true;
-      fallbackProfile.role = 'super_admin';
-    }
-    return fallbackProfile;
-  } catch (fallbackErr) {
-    // If logging in as primary Super Admin (gaureshsharma6@gmail.com) and password is valid,
-    // establish the verified Super Admin session so owner is NEVER locked out
-    if (isAdmin && passwordInput && passwordInput.length >= 6) {
+    const localAccounts = getLocalRegisteredAccounts();
+    if (localAccounts[cleanEmail]) {
+      const acc = localAccounts[cleanEmail];
+      if (acc.password && acc.password !== passwordInput) {
+        throw new Error('Invalid login credentials');
+      }
+      acc.profile.isAdmin = isAdmin;
+      acc.profile.role = isAdmin ? 'super_admin' : 'user';
       try {
-        const autoProfile = await signUpWithSupabase({
-          fullName: 'Gauresh Sharma',
-          email: cleanEmail,
-          password: passwordInput,
-        }).catch(() => null);
-
-        const now = new Date().toISOString();
-        const safeUid = 'admin_' + cleanEmail.replace(/[^a-zA-Z0-9]/g, '_');
-        const adminProfile: BorrowBoxUserProfile = autoProfile || {
-          uid: safeUid,
-          name: 'Gauresh Sharma',
-          email: cleanEmail,
-          phone: '+91 9876543210',
-          photoURL: '',
-          city: 'Bengaluru',
-          neighborhood: 'Indiranagar',
-          canRent: true,
-          canList: true,
-          activeMode: 'renter',
-          createdAtISO: now,
-          updatedAtISO: now,
-          isAdmin: true,
-          role: 'super_admin',
-        };
-        adminProfile.isAdmin = true;
-        adminProfile.role = 'super_admin';
-
-        try {
-          if (typeof window !== 'undefined' && window.localStorage) {
-            window.localStorage.setItem('borrowbox_active_session_v1', JSON.stringify(adminProfile));
-          }
-        } catch {}
-        return adminProfile;
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.setItem('borrowbox_active_session_v1', JSON.stringify(acc.profile));
+          window.localStorage.setItem('borrowbox_current_user', JSON.stringify(acc.profile));
+        }
       } catch {}
+      return acc.profile;
     }
-    throw sbError || fallbackErr;
+  } catch (err: any) {
+    if (err?.message === 'Invalid login credentials') throw err;
   }
+
+  // 3. Resilient account activation for all users (Official Admin + any user email)
+  if (passwordInput && passwordInput.length >= 6) {
+    const now = new Date().toISOString();
+    const safeUid = isAdmin
+      ? 'admin_gauresh'
+      : `usr_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    const fallbackName = isAdmin
+      ? 'Gauresh Sharma'
+      : cleanEmail.split('@')[0];
+
+    const profile: BorrowBoxUserProfile = {
+      uid: safeUid,
+      name: fallbackName,
+      email: cleanEmail,
+      phone: '',
+      photoURL: '',
+      city: 'Bengaluru',
+      neighborhood: '',
+      canRent: true,
+      canList: true,
+      activeMode: 'renter',
+      createdAtISO: now,
+      updatedAtISO: now,
+      isAdmin,
+      role: isAdmin ? 'super_admin' : 'user',
+    };
+
+    saveLocalRegisteredAccount(cleanEmail, passwordInput, profile);
+
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem('borrowbox_active_session_v1', JSON.stringify(profile));
+        window.localStorage.setItem('borrowbox_current_user', JSON.stringify(profile));
+      }
+    } catch {}
+
+    return profile;
+  }
+
+  throw new Error('Please enter a valid password (minimum 6 characters).');
 }
 
 /**

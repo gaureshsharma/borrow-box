@@ -4,7 +4,7 @@
  */
 
 import React, { Suspense, lazy, useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { DEMO_PRODUCT_LISTINGS } from './data/demoCatalog';
 import {
@@ -47,6 +47,7 @@ import {
 import {
   supabase,
   mapSupabaseSessionToUser,
+  extractUserFromOAuthRedirect,
   supabaseUserToProfile,
   signOutSupabase,
 } from './services/supabase';
@@ -396,6 +397,7 @@ export default function App() {
   const [adminAccessDeniedReason, setAdminAccessDeniedReason] = useState<
     string | null
   >(null);
+  const [oauthError, setOauthError] = useState<string | null>(null);
 
   // Bookings, messages, reviews, notifications & modals
   const [bookings, setBookings] = useState<RentalBookingRecord[]>([]);
@@ -523,6 +525,14 @@ export default function App() {
         }
       }
     };
+
+    // 0. Direct URL extraction for immediate OAuth session & error handling
+    const directOAuth = extractUserFromOAuthRedirect();
+    if (directOAuth.error) {
+      setOauthError(directOAuth.error);
+    } else if (directOAuth.user) {
+      syncSessionUser(directOAuth.user);
+    }
 
     // Immediate session resolution on mount
     supabase.auth
@@ -1525,6 +1535,30 @@ export default function App() {
           setIsIntroActive(false);
         }}
       />
+
+      {oauthError && (
+        <aside
+          role="alert"
+          aria-live="polite"
+          className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-xl w-[92%] p-4 rounded-xl bg-[#1E112A] border border-[#EF4444]/50 shadow-2xl text-[#F8FAFC] flex items-start justify-between gap-3 backdrop-blur-md"
+        >
+          <div className="flex items-start gap-2.5">
+            <AlertCircle className="w-5 h-5 text-[#EF4444] shrink-0 mt-0.5" />
+            <div className="text-xs">
+              <span className="font-bold text-[#FCA5A5] block mb-0.5">Authentication Notice</span>
+              <span className="text-[#E2E8F0]">{oauthError}</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            aria-label="Dismiss notification"
+            onClick={() => setOauthError(null)}
+            className="text-[#94A3B8] hover:text-[#F8FAFC] p-1 rounded-md cursor-pointer shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </aside>
+      )}
 
       <Navbar
         currentRoute={currentRoute}
