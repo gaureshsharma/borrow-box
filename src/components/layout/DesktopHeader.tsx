@@ -29,6 +29,7 @@ import {
 import {
   ROLE_DEFINITIONS,
   shouldShowAdminPanelOption,
+  isSuperAdminEmail,
 } from '../../utils/adminRbac';
 import {
   DESKTOP_PRIMARY_NAV_ITEMS,
@@ -104,11 +105,13 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const hasVerifiedAdminAccess =
-    shouldShowAdminPanelOption(verifiedAdminRecord) || Boolean(userProfile?.isAdmin);
+    shouldShowAdminPanelOption(verifiedAdminRecord) ||
+    Boolean(userProfile?.isAdmin) ||
+    Boolean(userProfile?.email && isSuperAdminEmail(userProfile.email));
   const adminRoleLabel =
     hasVerifiedAdminAccess && verifiedAdminRecord
       ? ROLE_DEFINITIONS[verifiedAdminRecord.role]?.label || 'Administrator'
-      : userProfile?.isAdmin
+      : (userProfile?.isAdmin || (userProfile?.email && isSuperAdminEmail(userProfile.email)))
       ? 'Super Admin'
       : null;
 
@@ -729,7 +732,7 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
                       </button>
                     )}
 
-                    {hasVerifiedAdminAccess && verifiedAdminRecord && (
+                    {hasVerifiedAdminAccess && (
                       <button
                         type="button"
                         role="menuitem"
@@ -741,7 +744,7 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
                           <span>Admin Panel</span>
                         </span>
                         <span className="text-[10px] font-mono text-[#06B6D4]">
-                          {adminRoleLabel}
+                          {adminRoleLabel || 'Super Admin'}
                         </span>
                       </button>
                     )}

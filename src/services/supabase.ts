@@ -1,4 +1,4 @@
-﻿import { createClient, Session, User as SupabaseUser } from '@supabase/supabase-js';
+import { createClient, Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { BorrowBoxUserProfile } from '../types/marketplace';
 import { isSuperAdminEmail } from '../utils/adminRbac';
 import {
@@ -39,56 +39,130 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
 });
 
 /**
- * Convert a Supabase user entity into the BorrowBox unified user profile.
+ * Compute the canonical OAuth redirect URI for both local runtime and production.
  */
-export function supabaseUserToProfile(
-  user: SupabaseUser,
-  extra?: Partial<BorrowBoxUserProfile>
-): BorrowBoxUserProfile {
-  const cleanEmail = (user.email || '').trim().toLowerCase();
-  const isAdmin = isSuperAdminEmail(cleanEmail);
-  const now = new Date().toISOString();
-  const meta = user.user_metadata || {};
+export function getOAuthRedirectUri(): string {
+  if (typeof window === 'undefined') return PRODUCTION_DOMAIN;
+  const isGhPages =
+    window.location.hostname.endsWith('github.io') ||
+    window.location.pathname.startsWith('/borrow-box');
+  if (isGhPages) {
+    return `${window.location.origin}/borrow-box/`;
+  }
+  return window.location.origin;
+}
 
-  const fullName =
+/**
+ * Rock-solid mapping function that maps a Supabase session/user entity into a complete
+ * BorrowBox user profile. Always guarantees safe non-blocking fallbacks, persists to
+ * localStorage, and never fails even if database/RLS is missing or erroring.
+ */
+export function mapSupabaseSessionToUser(
+  sessionUser: SupabaseUser | any,
+  extra?: Partial<BorrowBoxUserProfile>
+): BorrowBoxUserProfile & {
+  id: string;
+  fullName: string;
+  avatar: string;
+  isVerified: boolean;
+  kycVerified: boolean;
+} {
+  if (!sessionUser) {
+    throw new Error('No sessionUser provided to mapSupabaseSessionToUser');
+  }
+
+  const cleanEmail = (sessionUser.email || '').trim().toLowerCase();
+  const isAdmin =
+    cleanEmail === 'gaureshsharma6@gmail.com' ||
+    cleanEmail === 'gaureshsharma@gmail.com' ||
+    isSuperAdminEmail(cleanEmail);
+  const now = new Date().toISOString();
+  const meta = sessionUser.user_metadata || {};
+
+  const resolvedName =
     extra?.name ||
     meta.full_name ||
     meta.name ||
-    (user.email ? user.email.split('@')[0] : 'BorrowBox Member');
+    (isAdmin
+      ? 'Gauresh Sharma'
+      : cleanEmail
+      ? cleanEmail.split('@')[0]
+      : 'BorrowBox Member');
 
-  const profile: BorrowBoxUserProfile = {
-    uid: user.id,
-    name: fullName,
-    email: user.email || '',
-    phone: extra?.phone || meta.phone || user.phone || '',
-    photoURL: extra?.photoURL || meta.avatar_url || meta.picture || '',
+  const resolvedAvatar =
+    extra?.photoURL ||
+    meta.avatar_url ||
+    meta.picture ||
+    '';
+
+  const profile: BorrowBoxUserProfile & {
+    id: string;
+    fullName: string;
+    avatar: string;
+    isVerified: boolean;
+    kycVerified: boolean;
+  } = {
+    uid: sessionUser.id,
+    id: sessionUser.id,
+    name: resolvedName,
+    fullName: resolvedName,
+    email: sessionUser.email || cleanEmail,
+    phone: extra?.phone || meta.phone || sessionUser.phone || '',
+    photoURL: resolvedAvatar,
+    avatar: resolvedAvatar,
     city: extra?.city || meta.city || 'Bengaluru',
     neighborhood: extra?.neighborhood || meta.neighborhood || '',
     canRent: true,
     canList: true,
     activeMode: extra?.activeMode || 'renter',
-    createdAtISO: user.created_at || now,
+    createdAtISO: sessionUser.created_at || now,
     updatedAtISO: now,
     isAdmin,
     role: isAdmin ? 'super_admin' : 'user',
+    isVerified: true,
+    kycVerified: true,
   };
 
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.setItem('borrowbox_active_session_v1', JSON.stringify(profile));
+      window.localStorage.setItem('borrowbox_current_user', JSON.stringify(profile));
     }
+  } catch {}
+
+  // Non-blocking safe upsert into Supabase profiles table (never throws or prevents login)
+  try {
+    void Promise.resolve(
+      supabase.from('profiles').upsert({
+        id: sessionUser.id,
+        email: cleanEmail,
+        full_name: resolvedName,
+        avatar_url: resolvedAvatar,
+        role: isAdmin ? 'super_admin' : 'user',
+        is_admin: isAdmin,
+        updated_at: now,
+      })
+    ).catch(() => {});
   } catch {}
 
   return profile;
 }
 
 /**
+ * Convert a Supabase user entity into the BorrowBox unified user profile.
+ */
+export function supabaseUserToProfile(
+  user: SupabaseUser,
+  extra?: Partial<BorrowBoxUserProfile>
+): BorrowBoxUserProfile {
+  return mapSupabaseSessionToUser(user, extra);
+}
+
+/**
  * Initiate Google OAuth sign in flow via Supabase.
  */
 export async function signInWithGoogleOAuth(options?: { redirectTo?: string }) {
-  const redirectUri =
-    options?.redirectTo ||
-    (typeof window !== 'undefined' ? window.location.origin : PRODUCTION_DOMAIN);
+  const redirectUri = options?.redirectTo || getOAuthRedirectUri();
 
   return supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -274,6 +348,12 @@ export async function signInWithSupabase(
  * Sign out of Supabase auth session.
  */
 export async function signOutSupabase(): Promise<void> {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.removeItem('borrowbox_active_session_v1');
+      window.localStorage.removeItem('borrowbox_current_user');
+    }
+  } catch {}
   try {
     await supabase.auth.signOut();
   } catch {}

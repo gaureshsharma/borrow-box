@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   AlertCircle,
   ArrowLeft,
@@ -35,6 +35,7 @@ import {
   signInWithGoogleOAuth,
   signUpWithSupabase,
   signInWithSupabase,
+  mapSupabaseSessionToUser,
 } from '../services/supabase';
 import { PageRoute } from '../components/Navbar';
 import { BorrowBoxLogo } from '../components/BorrowBoxLogo';
@@ -358,8 +359,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       } else {
         setAuthError(decoded);
       }
-    } else if (hashParams.get('access_token')) {
+    } else if (hashParams.get('access_token') || searchParams.get('code')) {
       setStatusMessage('Signed in with Google! Preparing your BorrowBox dashboard...');
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          const profile = mapSupabaseSessionToUser(session.user);
+          onAuthenticated(profile);
+        }
+      }).catch(() => {});
     }
   }, []);
 
@@ -370,14 +377,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     setShowDomainAuthGuide(false);
     setIsGoogleLoading(true);
     try {
-      const redirectUri =
-        typeof window !== 'undefined' ? window.location.origin : undefined;
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectUri,
-        },
-      });
+      const { data, error } = await signInWithGoogleOAuth();
       if (error) throw error;
       if (data?.url) {
         window.location.href = data.url;

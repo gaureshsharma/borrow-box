@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -46,6 +46,7 @@ import {
 } from './services/firebase';
 import {
   supabase,
+  mapSupabaseSessionToUser,
   supabaseUserToProfile,
   signOutSupabase,
 } from './services/supabase';
@@ -125,6 +126,7 @@ function parseUrlToRoute(pathname: string, search: string): PageRoute {
       rawHash &&
       rawHash !== '/' &&
       !rawHash.includes('access_token=') &&
+      !rawHash.includes('refresh_token=') &&
       !rawHash.includes('error=') &&
       !rawHash.includes('error_description=')
     ) {
@@ -331,17 +333,65 @@ export default function App() {
   >('All');
   const [sortBy, setSortBy] = useState<SortOption>('featured');
 
-  // Firebase Auth & Firestore User Profile state
-  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
-  const [userProfile, setUserProfile] =
-    useState<BorrowBoxUserProfile | null>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  // User Profile and Session State (Instantly hydrated from storage on initial render)
+  const initialPersistedProfile = (() => {
+    const persisted = getPersistedSessionProfile();
+    if (
+      persisted &&
+      persisted.uid &&
+      persisted.uid !== 'usr_admin_gaureshsharma' &&
+      persisted.uid !== 'usr_owner_rahul_verma' &&
+      persisted.uid !== 'usr_renter_priya_sharma'
+    ) {
+      return persisted;
+    }
+    return null;
+  })();
+
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(() => {
+    if (initialPersistedProfile) {
+      return {
+        uid: initialPersistedProfile.uid,
+        email: initialPersistedProfile.email,
+        displayName: initialPersistedProfile.name,
+        photoURL: initialPersistedProfile.photoURL || null,
+      } as unknown as User;
+    }
+    return null;
+  });
+  const [userProfile, setUserProfile] = useState<BorrowBoxUserProfile | null>(
+    () => initialPersistedProfile
+  );
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [pendingProtectedRoute, setPendingProtectedRoute] =
     useState<PageRoute | null>(null);
 
-  // Verified Administrator session state (populated after Firebase Auth login & synced in real time)
+  // Verified Administrator session state (hydrated immediately for Super Admin)
   const [verifiedAdminRecord, setVerifiedAdminRecord] =
-    useState<AdminRegistryRecord | null>(null);
+    useState<AdminRegistryRecord | null>(() => {
+      if (
+        initialPersistedProfile &&
+        (initialPersistedProfile.isAdmin ||
+          isSuperAdminEmail(initialPersistedProfile.email))
+      ) {
+        return {
+          id: initialPersistedProfile.email,
+          uid: initialPersistedProfile.uid,
+          email: initialPersistedProfile.email,
+          name: initialPersistedProfile.name,
+          role: 'super_admin',
+          status: 'active',
+          customPermissions: [],
+          revokedPermissions: [],
+          grantedBy: initialPersistedProfile.email,
+          grantedAtISO:
+            initialPersistedProfile.createdAtISO || new Date().toISOString(),
+          lastLoginAtISO: new Date().toISOString(),
+          updatedAtISO: new Date().toISOString(),
+        };
+      }
+      return null;
+    });
   const [isVerifyingAdminSession, setIsVerifyingAdminSession] = useState(false);
   const [adminAccessDeniedReason, setAdminAccessDeniedReason] = useState<
     string | null
@@ -410,12 +460,129 @@ export default function App() {
     void loadCommunityData();
   }, []);
 
-  // Subscribe to Firebase Authentication state changes
+  // 1. Supabase Authentication state listener & OAuth redirect session synchronization
+  useEffect(() => {
+    let isMounted = true;
+
+    const syncSessionUser = (sbUser: any) => {
+      if (!sbUser) return;
+      const profile = mapSupabaseSessionToUser(sbUser);
+      setUserProfile(profile);
+
+      const pseudoUser = {
+        uid: profile.uid,
+        email: profile.email,
+        displayName: profile.name,
+        photoURL: profile.photoURL || null,
+      } as unknown as User;
+      setFirebaseUser(pseudoUser);
+      setIsAuthLoading(false);
+
+      const isSuperAdmin = profile.isAdmin || isSuperAdminEmail(profile.email);
+      if (isSuperAdmin) {
+        setVerifiedAdminRecord({
+          id: profile.email,
+          uid: profile.uid,
+          email: profile.email,
+          name: profile.name,
+          role: 'super_admin',
+          status: 'active',
+          customPermissions: [],
+          revokedPermissions: [],
+          grantedBy: profile.email,
+          grantedAtISO: profile.createdAtISO || new Date().toISOString(),
+          lastLoginAtISO: new Date().toISOString(),
+          updatedAtISO: new Date().toISOString(),
+        });
+        setAdminAccessDeniedReason(null);
+      }
+
+      // Check if URL has OAuth callback params and preserve state before cleaning URL
+      if (typeof window !== 'undefined') {
+        const hash = window.location.hash || '';
+        const search = window.location.search || '';
+        const hasOAuthParams =
+          hash.includes('access_token') ||
+          search.includes('code=') ||
+          hash.includes('error');
+
+        if (hasOAuthParams) {
+          try {
+            const cleanUrl = window.location.pathname.startsWith('/borrow-box')
+              ? '/borrow-box/'
+              : '/';
+            window.history.replaceState(null, '', cleanUrl);
+          } catch {}
+
+          // Auto-navigate to Admin Panel for Super Admin or Dashboard for users
+          if (isSuperAdmin) {
+            setCurrentRoute({ page: 'admin' });
+          } else {
+            setCurrentRoute({ page: 'dashboard' });
+          }
+        }
+      }
+    };
+
+    // Immediate session resolution on mount
+    supabase.auth
+      .getSession()
+      .then(({ data: { session }, error }) => {
+        if (!isMounted) return;
+        if (session?.user) {
+          syncSessionUser(session.user);
+        }
+      })
+      .catch((err) => {
+        console.warn('Supabase getSession warning:', err);
+      });
+
+    // Real-time auth state subscription
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!isMounted) return;
+      if (
+        (event === 'SIGNED_IN' ||
+          event === 'INITIAL_SESSION' ||
+          event === 'TOKEN_REFRESHED' ||
+          event === 'USER_UPDATED') &&
+        session?.user
+      ) {
+        syncSessionUser(session.user);
+      } else if (event === 'SIGNED_OUT') {
+        setUserProfile(null);
+        setFirebaseUser(null);
+        setVerifiedAdminRecord(null);
+        try {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.removeItem('borrowbox_active_session_v1');
+            window.localStorage.removeItem('borrowbox_current_user');
+          }
+        } catch {}
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription?.unsubscribe();
+    };
+  }, []);
+
+  // 2. Subscribe to Firebase Authentication state changes (secondary/fallback)
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (!fbUser) {
+        // If returning from Google OAuth redirect, DO NOT wipe Supabase state
+        if (
+          typeof window !== 'undefined' &&
+          (window.location.hash.includes('access_token') ||
+            window.location.search.includes('code='))
+        ) {
+          return;
+        }
+
         const persisted = getPersistedSessionProfile();
-        // If persisted profile is valid and NOT an old test account
         if (
           persisted &&
           persisted.uid &&
@@ -423,28 +590,25 @@ export default function App() {
           persisted.uid !== 'usr_owner_rahul_verma' &&
           persisted.uid !== 'usr_renter_priya_sharma'
         ) {
-          setUserProfile(persisted);
+          setUserProfile((prev) => prev || persisted);
           const pseudoUser = {
             uid: persisted.uid,
             email: persisted.email,
             displayName: persisted.name,
             photoURL: persisted.photoURL || null,
           } as unknown as User;
-          setFirebaseUser(pseudoUser);
+          setFirebaseUser((prev) => prev || pseudoUser);
           setIsAuthLoading(false);
           return;
-        } else if (persisted) {
-          try {
-            if (typeof window !== 'undefined' && window.localStorage) {
-              window.localStorage.removeItem('borrowbox_active_session_v1');
-            }
-          } catch {}
         }
-        setFirebaseUser(null);
-        setUserProfile(null);
+
+        // Only clear if no existing profile is currently populated
+        setUserProfile((prev) => (prev ? prev : null));
+        setFirebaseUser((prev) => (prev ? prev : null));
         setIsAuthLoading(false);
         return;
       }
+
       setFirebaseUser(fbUser);
       try {
         const profile = await ensureOrLoadUserProfile(fbUser);
@@ -472,23 +636,26 @@ export default function App() {
         }
       } catch {
         const fallbackNow = new Date().toISOString();
-        setUserProfile({
-          uid: fbUser.uid,
-          name:
-            fbUser.displayName ||
-            (fbUser.email ? fbUser.email.split('@')[0] : 'BorrowBox Member'),
-          email: fbUser.email || '',
-          phone: '',
-          photoURL: fbUser.photoURL || '',
-          city: (selectedCity !== 'All' ? selectedCity : '') as IndianCity,
-          neighborhood: '',
-          canRent: true,
-          canList: true,
-          activeMode: 'renter',
-          createdAtISO: fallbackNow,
-          updatedAtISO: fallbackNow,
-          isAdmin: isSuperAdminEmail(fbUser.email),
-          role: isSuperAdminEmail(fbUser.email) ? 'super_admin' : 'user',
+        setUserProfile((prev) => {
+          if (prev) return prev;
+          return {
+            uid: fbUser.uid,
+            name:
+              fbUser.displayName ||
+              (fbUser.email ? fbUser.email.split('@')[0] : 'BorrowBox Member'),
+            email: fbUser.email || '',
+            phone: '',
+            photoURL: fbUser.photoURL || '',
+            city: (selectedCity !== 'All' ? selectedCity : '') as IndianCity,
+            neighborhood: '',
+            canRent: true,
+            canList: true,
+            activeMode: 'renter',
+            createdAtISO: fallbackNow,
+            updatedAtISO: fallbackNow,
+            isAdmin: isSuperAdminEmail(fbUser.email),
+            role: isSuperAdminEmail(fbUser.email) ? 'super_admin' : 'user',
+          };
         });
       } finally {
         setIsAuthLoading(false);
@@ -497,76 +664,35 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Supabase Authentication state listener & initial session recovery
+  // 3. Real-time administrator verification & live revocation listener
   useEffect(() => {
-    const handleSupabaseUser = (sbUser: any) => {
-      const profile = supabaseUserToProfile(sbUser);
-      setUserProfile(profile);
-      const pseudoUser = {
-        uid: sbUser.id,
-        email: sbUser.email,
-        displayName: profile.name,
-        photoURL: profile.photoURL || null,
-      } as unknown as User;
-      setFirebaseUser(pseudoUser);
-      setIsAuthLoading(false);
-
-      if (isSuperAdminEmail(sbUser.email)) {
-        setVerifiedAdminRecord({
-          id: sbUser.email!,
-          uid: sbUser.id,
-          email: sbUser.email!,
-          name: profile.name,
-          role: 'super_admin',
-          status: 'active',
-          customPermissions: [],
-          revokedPermissions: [],
-          grantedBy: sbUser.email!,
-          grantedAtISO: new Date().toISOString(),
-          lastLoginAtISO: new Date().toISOString(),
-          updatedAtISO: new Date().toISOString(),
-        });
-        setAdminAccessDeniedReason(null);
-      }
-
-      // If returning from Google OAuth redirect with access token in the URL hash
-      if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
-        try {
-          window.history.replaceState(null, '', window.location.pathname);
-        } catch {}
-        if (isSuperAdminEmail(sbUser.email)) {
-          handleNavigate({ page: 'admin' });
-        } else {
-          handleNavigate({ page: 'dashboard' });
-        }
-      }
-    };
-
-    // Check initial session (e.g. returning from Google OAuth redirect)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        handleSupabaseUser(session.user);
-      }
-    });
-
-    // Listen to changes (e.g. sign in, token refreshed)
-    const { data: authSub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        handleSupabaseUser(session.user);
-      }
-    });
-
-    return () => {
-      authSub?.subscription?.unsubscribe();
-    };
-  }, []);
-
-  // Real-time administrator verification & live revocation listener whenever firebaseUser changes
-  useEffect(() => {
-    if (!firebaseUser) {
-      setVerifiedAdminRecord(null);
+    const adminEmail = firebaseUser?.email || userProfile?.email;
+    if (isSuperAdminEmail(adminEmail)) {
+      setVerifiedAdminRecord({
+        id: adminEmail!,
+        uid: firebaseUser?.uid || userProfile?.uid || 'admin_gauresh',
+        email: adminEmail!,
+        name: firebaseUser?.displayName || userProfile?.name || 'Gauresh Sharma',
+        role: 'super_admin',
+        status: 'active',
+        customPermissions: [],
+        revokedPermissions: [],
+        grantedBy: adminEmail!,
+        grantedAtISO: new Date().toISOString(),
+        lastLoginAtISO: new Date().toISOString(),
+        updatedAtISO: new Date().toISOString(),
+      });
       setIsVerifyingAdminSession(false);
       setAdminAccessDeniedReason(null);
+      return;
+    }
+
+    if (!firebaseUser) {
+      if (!userProfile?.isAdmin) {
+        setVerifiedAdminRecord(null);
+        setIsVerifyingAdminSession(false);
+        setAdminAccessDeniedReason(null);
+      }
       return;
     }
 
@@ -577,7 +703,7 @@ export default function App() {
         if (res.authorized && res.adminRecord) {
           setVerifiedAdminRecord(res.adminRecord);
           setAdminAccessDeniedReason(null);
-        } else {
+        } else if (!userProfile?.isAdmin) {
           setVerifiedAdminRecord(null);
           setAdminAccessDeniedReason(res.reason || null);
         }
@@ -588,7 +714,7 @@ export default function App() {
     return () => {
       unsubscribeAdmin();
     };
-  }, [firebaseUser]);
+  }, [firebaseUser, userProfile?.isAdmin, userProfile?.email]);
 
   // Real-time customer support notifications listener (accessible from anywhere in BorrowBox)
   useEffect(() => {
@@ -619,6 +745,15 @@ export default function App() {
   // Sync browse filters if browser back/forward buttons or hash change are used
   useEffect(() => {
     const handlePopState = () => {
+      // If returning with OAuth tokens or callback parameters, do not parse as normal route
+      if (
+        typeof window !== 'undefined' &&
+        (window.location.hash.includes('access_token') ||
+          window.location.hash.includes('error=') ||
+          window.location.search.includes('code='))
+      ) {
+        return;
+      }
       const parsed = parseUrlToRoute(
         window.location.pathname,
         window.location.search

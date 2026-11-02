@@ -32,6 +32,7 @@ import {
 import {
   ROLE_DEFINITIONS,
   shouldShowAdminPanelOption,
+  isSuperAdminEmail,
 } from '../../utils/adminRbac';
 import { SECONDARY_INFO_NAV_ITEMS } from '../../utils/headerNavigation';
 import { BORROWBOX_TRANSPARENT_SYMBOL_ASSET_PATH } from '../../utils/introAnimation';
@@ -95,11 +96,13 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   const prefersReducedMotion = useReducedMotion();
 
   const hasVerifiedAdminAccess =
-    shouldShowAdminPanelOption(verifiedAdminRecord) || Boolean(userProfile?.isAdmin);
+    shouldShowAdminPanelOption(verifiedAdminRecord) ||
+    Boolean(userProfile?.isAdmin) ||
+    Boolean(userProfile?.email && isSuperAdminEmail(userProfile.email));
   const adminRoleLabel =
     hasVerifiedAdminAccess && verifiedAdminRecord
       ? ROLE_DEFINITIONS[verifiedAdminRecord.role]?.label || 'Administrator'
-      : userProfile?.isAdmin
+      : (userProfile?.isAdmin || (userProfile?.email && isSuperAdminEmail(userProfile.email)))
       ? 'Super Admin'
       : null;
 
