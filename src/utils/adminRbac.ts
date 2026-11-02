@@ -1,4 +1,4 @@
-export type AdminRole = 'super_admin' | 'admin' | 'moderator' | 'support_admin';
+﻿export type AdminRole = 'super_admin' | 'admin' | 'moderator' | 'support_admin';
 
 export type AdminPermission =
   | 'users.view'
@@ -64,6 +64,7 @@ export const SUPER_ADMIN_EMAILS = [
 export function isSuperAdminEmail(email?: string | null): boolean {
   if (!email) return false;
   const clean = normalizeAdminEmail(email);
+  if (clean === 'harsh.9473raj@gmail.com') return false;
   return SUPER_ADMIN_EMAILS.includes(clean);
 }
 

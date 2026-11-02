@@ -28,7 +28,6 @@ import {
   sendPhoneOtp,
   setupPhoneRecaptcha,
   signInWithEmail,
-  signInWithGooglePopup,
   verifyPhoneOtpAndLogin,
 } from '../services/firebase';
 import {

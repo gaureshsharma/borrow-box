@@ -1,4 +1,4 @@
-import { createClient, Session, User as SupabaseUser } from '@supabase/supabase-js';
+﻿import { createClient, Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { BorrowBoxUserProfile } from '../types/marketplace';
 import { isSuperAdminEmail } from '../utils/adminRbac';
 import {
@@ -218,21 +218,6 @@ export async function signInWithSupabase(
     }
     return fallbackProfile;
   } catch (fallbackErr) {
-    // If account doesn't exist yet and password is valid, auto-create seamlessly
-    if (passwordInput && passwordInput.length >= 6) {
-      try {
-        const autoProfile = await signUpWithSupabase({
-          fullName: cleanEmail.split('@')[0],
-          email: cleanEmail,
-          password: passwordInput,
-        });
-        if (isAdmin) {
-          autoProfile.isAdmin = true;
-          autoProfile.role = 'super_admin';
-        }
-        return autoProfile;
-      } catch {}
-    }
     throw sbError || fallbackErr;
   }
 }
