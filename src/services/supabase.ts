@@ -6,20 +6,29 @@ import {
   signInWithEmail,
 } from './firebase';
 
-// Fallback Supabase credentials for BorrowBox
-const FALLBACK_SUPABASE_URL = 'https://zgbjpizznlhoualuvada.supabase.co';
-const FALLBACK_SUPABASE_ANON_KEY =
+// Primary hardcoded Supabase configuration for Vercel, GitHub Pages, and local runtime
+export const HARDCODED_SUPABASE_URL = 'https://zgbjpizznlhoualuvada.supabase.co';
+export const HARDCODED_SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpnYmpwaXp6bmxob3VhbHV2YWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MjA1MDAwMDAwMH0.anon_key';
 
 export const PRODUCTION_DOMAIN = 'https://borrow-box-src.vercel.app';
 
-export const supabaseUrl =
-  (import.meta.env.VITE_SUPABASE_URL as string | undefined) || FALLBACK_SUPABASE_URL;
+const rawEnvUrl =
+  typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL
+    ? String(import.meta.env.VITE_SUPABASE_URL).trim()
+    : '';
 
-export const supabaseKey =
-  (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined) ||
-  (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) ||
-  FALLBACK_SUPABASE_ANON_KEY;
+const rawEnvKey =
+  typeof import.meta !== 'undefined' &&
+  (import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env?.VITE_SUPABASE_ANON_KEY)
+    ? String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY).trim()
+    : '';
+
+export const supabaseUrl: string =
+  rawEnvUrl.length > 0 ? rawEnvUrl : HARDCODED_SUPABASE_URL;
+
+export const supabaseKey: string =
+  rawEnvKey.length > 0 ? rawEnvKey : HARDCODED_SUPABASE_ANON_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {

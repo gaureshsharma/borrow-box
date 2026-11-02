@@ -1,4 +1,4 @@
-{
+﻿{
   "projectId": "divine-coast-fpz3c",
   "appId": "1:279689231958:web:f569ee15e4272f02f245f7",
   "apiKey": "AIzaSyCHsYW3LZq1g64eM17_pov0-efBaX98VQg",
@@ -7,6 +7,6 @@
   "storageBucket": "divine-coast-fpz3c.firebasestorage.app",
   "messagingSenderId": "279689231958",
   "measurementId": "",
-  "oAuthClientId": "279689231958-vm8bs0f4f9smb4p0ic7rvfjuk1na3q2u.apps.googleusercontent.com",
+  "oAuthClientId": "",
   "recaptchaSiteKey": ""
 }
