@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   TEAM_PAGE_CONTENT,
   TeamMember,
@@ -19,7 +19,7 @@ export interface TeamScrollShowcaseProps {
  *
  * Renders the three distinct team categories in exact vertical sequence
  * with natural, unlocked scrolling:
- * 1. Section 1: Project Guide (Pradeep Kumar)
+ * 1. Section 1: Project Guide (Pardeep Kumar)
  * 2. Section 2: The Founding Team (All 4 founders visible simultaneously on desktop)
  * 3. Section 3: Technical Lead (Krutarth Maru)
  */

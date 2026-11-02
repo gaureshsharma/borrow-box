@@ -10,7 +10,7 @@ interface HomeTeamSpotlightProps {
 const FEATURED_MEMBERS = [
   {
     id: 'guide',
-    name: 'Pradeep Kumar',
+    name: 'Pardeep Kumar',
     role: 'Project Guide',
     tag: 'Mentor',
     image: TEAM_IMAGE_MAP['guide'],

@@ -35,7 +35,7 @@ test('TEAM_MEMBERS contains all 6 profiles in exact sequence: Project Guide -> 4
   const expectedSequence = [
     {
       id: 'guide',
-      name: 'Pradeep Kumar',
+      name: 'Pardeep Kumar',
       role: 'Project Guide',
       image: '/guide.png',
       bio: 'Providing academic and project-level guidance, helping the team maintain direction and approach challenges thoughtfully.',
@@ -96,7 +96,7 @@ test('TEAM_MEMBERS contains all 6 profiles in exact sequence: Project Guide -> 4
   });
 
   const guide = getGuideMember();
-  assert.equal(guide.name, 'Pradeep Kumar');
+  assert.equal(guide.name, 'Pardeep Kumar');
   assert.equal(guide.role, 'Project Guide');
   assert.equal(guide.image, '/guide.png');
 

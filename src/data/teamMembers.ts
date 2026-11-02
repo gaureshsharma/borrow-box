@@ -61,7 +61,7 @@ export const TEAM_PAGE_CONTENT: TeamPageContent = {
  *
  * Exact Category & Profile Sequence:
  * Section 1 — Project Guide:
- *   1. Pradeep Kumar (Project Guide)
+ *   1. Pardeep Kumar (Project Guide)
  * Section 2 — Founding Team:
  *   2. Bhumika Khajuria (Co-Founder)
  *   3. Lipi Gupta (Co-Founder)
@@ -74,7 +74,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
   {
     id: 'guide',
     order: 1,
-    name: 'Pradeep Kumar',
+    name: 'Pardeep Kumar',
     role: 'Project Guide',
     designation: 'Project Guide',
     image: '/guide.png',
