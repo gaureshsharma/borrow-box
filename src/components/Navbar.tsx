@@ -117,8 +117,10 @@ const NavbarComponent: React.FC<NavbarProps> = ({
         initial={prefersReducedMotion ? false : 'hidden'}
         animate="visible"
         variants={headerEntranceVariants}
-        className={`sticky top-0 z-40 transition-colors duration-180 border-b border-white/[0.08] backdrop-blur-xs ${
-          isScrolled ? 'bg-[#0B0F19]/95' : 'bg-[#0B0F19]/88'
+        className={`sticky top-0 z-40 transition-colors duration-200 border-b border-black/[0.08] dark:border-white/[0.08] backdrop-blur-md ${
+          isScrolled
+            ? 'bg-white/90 dark:bg-[#0B0F19]/95 shadow-xs dark:shadow-none'
+            : 'bg-white/80 dark:bg-[#0B0F19]/88'
         }`}
       >
         <DesktopHeader

@@ -1,5 +1,4 @@
-﻿import React from 'react';
-import { BORROWBOX_TRANSPARENT_SYMBOL_ASSET_PATH } from '../../utils/introAnimation';
+import React from 'react';
 import { BorrowBoxLogo } from '../BorrowBoxLogo';
 import { PageRoute } from '../Navbar';
 
@@ -40,7 +39,7 @@ const FooterComponent: React.FC<FooterProps> = ({ onNavigate }) => {
   ];
 
   return (
-    <footer className="bg-[#0B0F19] border-t border-white/[0.08] text-[#94A3B8] relative z-10 pb-20 md:pb-0">
+    <footer className="bg-white/80 dark:bg-[#0B0F19]/90 backdrop-blur-md border-t border-slate-200/80 dark:border-white/[0.08] text-slate-600 dark:text-[#94A3B8] relative z-10 pb-20 md:pb-0 transition-colors">
       <div className="bb-container py-12 sm:py-16">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-14">
           {/* Brand Summary */}
@@ -58,12 +57,12 @@ const FooterComponent: React.FC<FooterProps> = ({ onNavigate }) => {
                 idPrefix="footer-brand-logo"
               />
             </a>
-            <p className="text-sm text-[#94A3B8] leading-relaxed max-w-sm">
+            <p className="text-sm text-slate-600 dark:text-[#94A3B8] leading-relaxed max-w-sm">
               Access more. Own less. India&apos;s verified peer-to-peer rental marketplace
               for professional cameras, gaming gear, power tools, and outdoor equipment.
             </p>
-            <div className="flex items-center gap-2 text-xs text-[#64748B] pt-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-[#64748B] pt-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400" />
               <span>Direct peer-to-peer handovers with escrow protection</span>
             </div>
           </div>
@@ -72,7 +71,7 @@ const FooterComponent: React.FC<FooterProps> = ({ onNavigate }) => {
           <div className="md:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6 lg:gap-8">
             {/* Column 1: ABOUT US */}
             <div className="space-y-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#F8FAFC] flex items-center gap-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-900 dark:text-[#F8FAFC] flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#8B5CF6]" />
                 <span>About Us</span>
               </h3>
@@ -82,7 +81,7 @@ const FooterComponent: React.FC<FooterProps> = ({ onNavigate }) => {
                     <a
                       href={link.href}
                       onClick={(e) => handleLinkClick(e, link.route)}
-                      className="group inline-flex items-center text-[#94A3B8] hover:text-[#F8FAFC] transition-colors duration-200 relative py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8B5CF6] rounded"
+                      className="group inline-flex items-center text-slate-600 hover:text-slate-900 dark:text-[#94A3B8] dark:hover:text-[#F8FAFC] transition-colors duration-200 relative py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8B5CF6] rounded"
                     >
                       <span>{link.label}</span>
                       <span className="absolute bottom-0 left-0 w-0 h-[1.5px] bg-[#8B5CF6] transition-all duration-300 ease-out group-hover:w-full" />
@@ -94,7 +93,7 @@ const FooterComponent: React.FC<FooterProps> = ({ onNavigate }) => {
 
             {/* Column 2: SUPPORT */}
             <div className="space-y-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#F8FAFC] flex items-center gap-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-900 dark:text-[#F8FAFC] flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#8B5CF6]" />
                 <span>Support</span>
               </h3>
@@ -104,7 +103,7 @@ const FooterComponent: React.FC<FooterProps> = ({ onNavigate }) => {
                     <a
                       href={link.href}
                       onClick={(e) => handleLinkClick(e, link.route)}
-                      className="group inline-flex items-center text-[#94A3B8] hover:text-[#F8FAFC] transition-colors duration-200 relative py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8B5CF6] rounded"
+                      className="group inline-flex items-center text-slate-600 hover:text-slate-900 dark:text-[#94A3B8] dark:hover:text-[#F8FAFC] transition-colors duration-200 relative py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8B5CF6] rounded"
                     >
                       <span>{link.label}</span>
                       <span className="absolute bottom-0 left-0 w-0 h-[1.5px] bg-[#8B5CF6] transition-all duration-300 ease-out group-hover:w-full" />
@@ -116,7 +115,7 @@ const FooterComponent: React.FC<FooterProps> = ({ onNavigate }) => {
 
             {/* Column 3: LEGAL */}
             <div className="space-y-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#F8FAFC] flex items-center gap-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-900 dark:text-[#F8FAFC] flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#8B5CF6]" />
                 <span>Legal</span>
               </h3>
@@ -126,7 +125,7 @@ const FooterComponent: React.FC<FooterProps> = ({ onNavigate }) => {
                     <a
                       href={link.href}
                       onClick={(e) => handleLinkClick(e, link.route)}
-                      className="group inline-flex items-center text-[#94A3B8] hover:text-[#F8FAFC] transition-colors duration-200 relative py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8B5CF6] rounded"
+                      className="group inline-flex items-center text-slate-600 hover:text-slate-900 dark:text-[#94A3B8] dark:hover:text-[#F8FAFC] transition-colors duration-200 relative py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8B5CF6] rounded"
                     >
                       <span>{link.label}</span>
                       <span className="absolute bottom-0 left-0 w-0 h-[1.5px] bg-[#8B5CF6] transition-all duration-300 ease-out group-hover:w-full" />
@@ -139,11 +138,11 @@ const FooterComponent: React.FC<FooterProps> = ({ onNavigate }) => {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-12 pt-8 border-t border-white/[0.08] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-[#64748B]">
+        <div className="mt-12 pt-8 border-t border-slate-200/80 dark:border-white/[0.08] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-slate-500 dark:text-[#64748B]">
           <p>© {new Date().getFullYear()} BORROWBox. All prices in ₹ (INR).</p>
           <div className="space-y-0.5 text-left sm:text-right">
-            <p className="font-semibold text-[#F8FAFC]">Available Across India</p>
-            <p className="text-[11px] text-[#94A3B8]">
+            <p className="font-semibold text-slate-900 dark:text-[#F8FAFC]">Available Across India</p>
+            <p className="text-[11px] text-slate-600 dark:text-[#94A3B8]">
               Discover rental opportunities across cities and communities throughout India.
             </p>
           </div>

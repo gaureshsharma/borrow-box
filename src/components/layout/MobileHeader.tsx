@@ -14,14 +14,17 @@ import {
   Mail,
   MapPin,
   Menu,
+  Moon,
   Plus,
   Search,
   Shield,
+  Sun,
   User,
   Users,
   X,
 } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { useTheme } from '../../context/ThemeContext';
 import {
   AdminRegistryRecord,
   AppNotificationItem,
@@ -90,6 +93,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   onSelectNotification,
   onMarkAllNotificationsRead,
 }) => {
+  const { theme, isDark, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchBarOpen, setSearchBarOpen] = useState(false);
   const [isCityModalOpen, setIsCityModalOpen] = useState(false);
@@ -159,8 +163,30 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
           />
         </a>
 
-        {/* Right: Directly Visible Auth Actions (or Authenticated Controls) + Hamburger Menu */}
+        {/* Right: Directly Visible Auth Actions (or Authenticated Controls) + Theme Switch + Hamburger Menu */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Aesthetic Theme Toggle Switch */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+            title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+            className="inline-flex items-center justify-center min-w-[36px] min-h-[36px] sm:min-w-[40px] sm:min-h-[40px] rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-[#161E2E] text-slate-700 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F8FAFC] bb-btn-interactive cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8B5CF6]"
+          >
+            <div className="relative w-4 h-4 flex items-center justify-center">
+              <Sun
+                className={`w-4 h-4 text-amber-500 absolute transition-all duration-300 transform ${
+                  isDark ? 'scale-0 -rotate-90 opacity-0' : 'scale-100 rotate-0 opacity-100'
+                }`}
+              />
+              <Moon
+                className={`w-4 h-4 text-violet-400 absolute transition-all duration-300 transform ${
+                  isDark ? 'scale-100 rotate-0 opacity-100' : 'scale-0 rotate-90 opacity-0'
+                }`}
+              />
+            </div>
+          </button>
+
           {!userProfile ? (
             <>
               <button
@@ -169,8 +195,8 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                 onClick={() => handleMobileNavigate({ page: 'login' })}
                 className={`min-h-[36px] px-2.5 sm:px-3 py-1.5 rounded-lg border text-xs font-semibold bb-btn-interactive cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8B5CF6] ${
                   currentRoute.page === 'login'
-                    ? 'bg-[#1D293B] border-[#8B5CF6]/45 text-[#F8FAFC]'
-                    : 'bg-[#161E2E] hover:bg-[#1D293B] border-white/[0.08] text-[#F8FAFC]'
+                    ? 'bg-slate-100 dark:bg-[#1D293B] border-[#8B5CF6]/45 text-slate-900 dark:text-[#F8FAFC]'
+                    : 'bg-white/80 dark:bg-[#161E2E] hover:bg-slate-100 dark:hover:bg-[#1D293B] border-slate-200/80 dark:border-white/[0.08] text-slate-800 dark:text-[#F8FAFC]'
                 }`}
               >
                 Login
@@ -194,10 +220,10 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                 setSearchBarOpen((prev) => !prev);
                 setMenuOpen(false);
               }}
-              className={`inline-flex items-center justify-center min-w-[40px] min-h-[40px] rounded-xl border bb-btn-interactive cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8B5CF6] ${
+              className={`inline-flex items-center justify-center min-w-[36px] min-h-[36px] sm:min-w-[40px] sm:min-h-[40px] rounded-xl border bb-btn-interactive cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8B5CF6] ${
                 searchBarOpen
-                  ? 'bg-[#1D293B] border-[#8B5CF6]/45 text-[#F8FAFC]'
-                  : 'bg-[#161E2E] border-white/[0.08] text-[#94A3B8] hover:text-[#F8FAFC]'
+                  ? 'bg-slate-100 dark:bg-[#1D293B] border-[#8B5CF6]/45 text-slate-900 dark:text-[#F8FAFC]'
+                  : 'bg-white/80 dark:bg-[#161E2E] border-slate-200/80 dark:border-white/[0.08] text-slate-700 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F8FAFC]'
               }`}
             >
               <Search className="w-4 h-4" />
@@ -215,10 +241,10 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
               setMenuOpen((prev) => !prev);
               setSearchBarOpen(false);
             }}
-            className={`inline-flex items-center justify-center gap-1.5 min-w-[40px] min-h-[40px] px-2.5 rounded-xl border bb-btn-interactive cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8B5CF6] ${
+            className={`inline-flex items-center justify-center gap-1.5 min-w-[36px] min-h-[36px] sm:min-w-[40px] sm:min-h-[40px] px-2.5 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-[#161E2E] bb-btn-interactive cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8B5CF6] ${
               menuOpen
-                ? 'bg-[#1D293B] border-[#8B5CF6]/45 text-[#F8FAFC]'
-                : 'bg-[#161E2E] border-white/[0.08] text-[#F8FAFC]'
+                ? 'bg-slate-100 dark:bg-[#1D293B] border-[#8B5CF6]/45 text-slate-900 dark:text-[#F8FAFC]'
+                : 'text-slate-800 dark:text-[#F8FAFC]'
             }`}
           >
             {userProfile && (
@@ -321,10 +347,10 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                   transition={mobileMenuPanelTransition}
                   aria-label="Mobile Navigation"
                   data-testid="mobile-menu-drawer"
-                  className="fixed top-0 right-0 bottom-0 w-full max-w-[340px] bg-[#111827] border-l border-white/[0.08] shadow-2xl flex flex-col z-10 overflow-y-auto"
+                  className="fixed top-0 right-0 bottom-0 w-full max-w-[340px] bg-white dark:bg-[#111827] border-l border-slate-200/80 dark:border-white/[0.08] shadow-2xl flex flex-col z-10 overflow-y-auto"
                 >
                   {/* Menu Top Bar with Clear Close Action */}
-                  <div className="h-14 px-4 border-b border-white/[0.08] flex items-center justify-between gap-3 shrink-0">
+                  <div className="h-14 px-4 border-b border-slate-200/80 dark:border-white/[0.08] flex items-center justify-between gap-3 shrink-0">
                     <BorrowBoxLogo
                       symbolSize="1.75rem"
                       textSize="text-sm font-bold"
@@ -335,13 +361,31 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                       type="button"
                       aria-label="Close mobile menu"
                       onClick={() => setMenuOpen(false)}
-                      className="inline-flex items-center justify-center min-w-[40px] min-h-[40px] rounded-xl bg-[#161E2E] border border-white/[0.08] text-[#94A3B8] hover:text-[#F8FAFC] bb-btn-interactive cursor-pointer"
+                      className="inline-flex items-center justify-center min-w-[40px] min-h-[40px] rounded-xl bg-slate-100 dark:bg-[#161E2E] border border-slate-200/80 dark:border-white/[0.08] text-slate-600 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F8FAFC] bb-btn-interactive cursor-pointer"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
 
                   <div className="p-4 space-y-5 flex-1 pb-24">
+                    {/* Theme / Appearance Toggle inside Drawer */}
+                    <button
+                      type="button"
+                      onClick={toggleTheme}
+                      className="w-full min-h-[44px] text-left px-3 py-2.5 rounded-xl text-sm font-medium flex items-center justify-between border border-slate-200/80 dark:border-white/[0.08] bg-slate-50 dark:bg-[#161E2E] text-slate-800 dark:text-[#F8FAFC] bb-btn-interactive cursor-pointer"
+                    >
+                      <span className="inline-flex items-center gap-3">
+                        {isDark ? (
+                          <Moon className="w-4 h-4 text-violet-400 shrink-0" />
+                        ) : (
+                          <Sun className="w-4 h-4 text-amber-500 shrink-0" />
+                        )}
+                        <span>Appearance</span>
+                      </span>
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 capitalize">
+                        {theme} Mode
+                      </span>
+                    </button>
                     {/* Quick Search Input Inside Mobile Menu */}
                     <form
                       onSubmit={handleMobileSearchSubmit}

@@ -12,13 +12,16 @@ import {
   LogOut,
   Mail,
   MapPin,
+  Moon,
   Plus,
   Search,
   Shield,
+  Sun,
   User,
   Users,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
+import { useTheme } from '../../context/ThemeContext';
 import {
   AdminRegistryRecord,
   AppNotificationItem,
@@ -92,6 +95,7 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
   onSelectNotification,
   onMarkAllNotificationsRead,
 }) => {
+  const { theme, isDark, toggleTheme } = useTheme();
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -378,7 +382,7 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
           type="button"
           aria-label={`Select location (current: ${selectedCity === 'All' ? 'All India' : selectedCity})`}
           onClick={() => setIsCityModalOpen(true)}
-          className="inline-flex items-center gap-1.5 h-9 px-2.5 lg:px-3 rounded-lg border border-white/[0.08] bg-[#161E2E] hover:border-[#8B5CF6]/50 text-xs text-[#E2E8F0] hover:text-[#F8FAFC] transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 h-9 px-2.5 lg:px-3 rounded-lg border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-[#161E2E] hover:border-[#8B5CF6]/50 text-xs text-slate-700 dark:text-[#E2E8F0] hover:text-slate-900 dark:hover:text-[#F8FAFC] transition-colors cursor-pointer"
           title="Select your city or region"
         >
           <MapPin className="w-3.5 h-3.5 text-[#8B5CF6] shrink-0" />
@@ -396,8 +400,8 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
             aria-expanded={searchOpen}
             onClick={() => setSearchOpen((prev) => !prev)}
             className={`inline-flex items-center justify-center gap-1.5 h-9 px-2.5 rounded-lg border text-xs font-medium bb-btn-interactive cursor-pointer ${searchOpen || searchQuery
-                ? 'bg-[#1D293B] border-[#8B5CF6]/40 text-[#F8FAFC]'
-                : 'bg-[#161E2E] border-white/[0.08] text-[#94A3B8] hover:text-[#F8FAFC] hover:border-white/[0.16]'
+                ? 'bg-slate-100 dark:bg-[#1D293B] border-[#8B5CF6]/40 text-slate-900 dark:text-[#F8FAFC]'
+                : 'bg-white/80 dark:bg-[#161E2E] border-slate-200/80 dark:border-white/[0.08] text-slate-700 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F8FAFC] hover:border-slate-300 dark:hover:border-white/[0.16]'
               }`}
           >
             <Search className="w-3.5 h-3.5 text-[#8B5CF6] shrink-0" />
@@ -468,17 +472,39 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
           type="button"
           onClick={onOpenWishlist}
           aria-label={`Wishlist (${wishlistCount} saved items)`}
-          className="hidden lg:inline-flex relative items-center justify-center h-9 px-2.5 rounded-lg bg-[#161E2E] border border-white/[0.08] text-[#94A3B8] hover:text-[#F8FAFC] hover:border-white/[0.16] bb-btn-interactive cursor-pointer"
+          className="hidden lg:inline-flex relative items-center justify-center h-9 px-2.5 rounded-lg bg-white/80 dark:bg-[#161E2E] border border-slate-200/80 dark:border-white/[0.08] text-slate-700 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F8FAFC] hover:border-slate-300 dark:hover:border-white/[0.16] bb-btn-interactive cursor-pointer"
         >
           <Heart
             className={`w-4 h-4 transition-transform duration-200 ${wishlistCount > 0 ? 'fill-[#8B5CF6] text-[#8B5CF6] scale-110' : ''
               }`}
           />
           {wishlistCount > 0 && (
-            <span className="ml-1.5 text-[11px] font-semibold text-[#F8FAFC] font-mono-tabular">
+            <span className="ml-1.5 text-[11px] font-semibold text-slate-900 dark:text-[#F8FAFC] font-mono-tabular">
               {wishlistCount}
             </span>
           )}
+        </button>
+
+        {/* Aesthetic Theme Toggle (Dark / Light Mode) */}
+        <button
+          type="button"
+          onClick={toggleTheme}
+          aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+          title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+          className="inline-flex items-center justify-center h-9 w-9 rounded-lg border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-[#161E2E] hover:bg-slate-100 dark:hover:bg-[#1D293B] text-slate-700 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F8FAFC] bb-btn-interactive cursor-pointer relative overflow-hidden transition-colors"
+        >
+          <div className="relative w-4 h-4 flex items-center justify-center">
+            <Sun
+              className={`w-4 h-4 text-amber-500 absolute transition-all duration-300 transform ${
+                isDark ? 'scale-0 -rotate-90 opacity-0' : 'scale-100 rotate-0 opacity-100'
+              }`}
+            />
+            <Moon
+              className={`w-4 h-4 text-violet-400 absolute transition-all duration-300 transform ${
+                isDark ? 'scale-100 rotate-0 opacity-100' : 'scale-0 rotate-90 opacity-0'
+              }`}
+            />
+          </div>
         </button>
 
         {/* Dynamic Admin Panel Link — strictly for verified active administrators */}
@@ -771,15 +797,15 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
         ) : (
           <div
             data-testid="desktop-auth-actions"
-            className="flex items-center gap-2 pl-1 border-l border-white/[0.08]"
+            className="flex items-center gap-2 pl-1 border-l border-slate-200/80 dark:border-white/[0.08]"
           >
             <button
               type="button"
               data-testid="desktop-login-button"
               onClick={() => handleNavigate({ page: 'login' })}
               className={`h-9 px-3.5 rounded-lg text-xs font-semibold border transition-colors bb-btn-interactive cursor-pointer whitespace-nowrap ${currentRoute.page === 'login'
-                  ? 'bg-[#1D293B] border-[#8B5CF6]/45 text-[#F8FAFC]'
-                  : 'bg-[#161E2E] hover:bg-[#1D293B] border-white/[0.08] hover:border-white/[0.16] text-[#F8FAFC]'
+                  ? 'bg-slate-100 dark:bg-[#1D293B] border-[#8B5CF6]/45 text-slate-900 dark:text-[#F8FAFC]'
+                  : 'bg-white/80 dark:bg-[#161E2E] hover:bg-slate-100 dark:hover:bg-[#1D293B] border-slate-200/80 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.16] text-slate-800 dark:text-[#F8FAFC]'
                 }`}
             >
               Login

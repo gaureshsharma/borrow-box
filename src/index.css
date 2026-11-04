@@ -1,7 +1,28 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
+    color-scheme: light;
+    --bg-primary: #F8FAFC;
+    --bg-secondary: #F1F5F9;
+    --bg-surface: #FFFFFF;
+    --bg-surface-elevated: #F8FAFC;
+    --accent-primary: #8B5CF6;
+    --accent-primary-hover: #7C3AED;
+    --accent-secondary: #06B6D4;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #94A3B8;
+    --border-subtle: rgba(15, 23, 42, 0.08);
+    --border-elevated: rgba(15, 23, 42, 0.14);
+    --status-success: #16A34A;
+    --status-warning: #D97706;
+    --status-error: #DC2626;
+  }
+
+  html.dark, :root:has(.dark) {
     color-scheme: dark;
     --bg-primary: #0B0F19;
     --bg-secondary: #111827;
@@ -21,8 +42,6 @@
   }
 
   html {
-    background-color: #0B0F19;
-    color: #F8FAFC;
     font-family: "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -30,8 +49,6 @@
   }
 
   body {
-    background-color: #0B0F19;
-    color: #F8FAFC;
     overflow-x: hidden;
   }
 }
@@ -41,15 +58,69 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Restrained radial atmosphere for dark canvas */
-.bb-ambient-canvas {
-  background-color: #0B0F19;
-  background-image:
-    radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.08) 0%, rgba(11, 15, 25, 0) 58%),
-    radial-gradient(circle at 85% 12%, rgba(6, 182, 212, 0.04) 0%, rgba(11, 15, 25, 0) 45%);
+/* Fluid live ambient canvas keyframes & animations */
+@keyframes fluid-orb-float-1 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(35px, 45px, 0) scale(1.06);
+  }
+  66% {
+    transform: translate3d(-25px, 30px, 0) scale(0.96);
+  }
 }
 
-/* Primary button micro-interaction (180ms GPU-friendly transform & color, no box-shadow repaint) */
+@keyframes fluid-orb-float-2 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(-40px, 35px, 0) scale(0.94);
+  }
+  66% {
+    transform: translate3d(25px, -30px, 0) scale(1.04);
+  }
+}
+
+@keyframes fluid-orb-float-3 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(45px, -30px, 0) scale(1.05);
+  }
+  66% {
+    transform: translate3d(-30px, -45px, 0) scale(0.95);
+  }
+}
+
+@keyframes fluid-orb-float-4 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(-35px, -40px, 0) scale(1.04);
+  }
+  66% {
+    transform: translate3d(40px, 25px, 0) scale(0.95);
+  }
+}
+
+.bb-fluid-orb-1 {
+  animation: fluid-orb-float-1 22s ease-in-out infinite alternate;
+}
+.bb-fluid-orb-2 {
+  animation: fluid-orb-float-2 26s ease-in-out infinite alternate;
+}
+.bb-fluid-orb-3 {
+  animation: fluid-orb-float-3 30s ease-in-out infinite alternate;
+}
+.bb-fluid-orb-4 {
+  animation: fluid-orb-float-4 24s ease-in-out infinite alternate;
+}
+
+/* Primary button micro-interaction */
 .bb-glow-button {
   box-shadow: 0 6px 20px -6px rgba(139, 92, 246, 0.4);
   transition:
@@ -67,7 +138,7 @@
   transform: scale(0.98);
 }
 
-/* Secondary & ghost button tactile feedback (180ms GPU-friendly transform & color) */
+/* Secondary & ghost button tactile feedback */
 .bb-btn-interactive {
   transition:
     transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -85,18 +156,22 @@
   transform: scale(0.98);
 }
 
-/* Marketplace product card hover elevation (200ms GPU-composited transform, no box-shadow transition) */
+/* Marketplace product card hover elevation */
 .bb-card-interactive {
-  box-shadow: 0 10px 24px -12px rgba(2, 6, 23, 0.55);
+  box-shadow: 0 10px 24px -12px rgba(2, 6, 23, 0.15);
   transition:
     transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
     border-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
-    background-color 200ms cubic-bezier(0.22, 1, 0.36, 1);
+    background-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html.dark .bb-card-interactive {
+  box-shadow: 0 10px 24px -12px rgba(2, 6, 23, 0.55);
 }
 
 .bb-card-interactive:hover {
   transform: translate3d(0, -3px, 0);
-  border-color: rgba(255, 255, 255, 0.16);
 }
 
 .bb-card-interactive .bb-card-image {
@@ -107,7 +182,7 @@
   transform: scale(1.025);
 }
 
-/* Team card restrained hover elevation (200ms GPU-composited transform) */
+/* Team card restrained hover elevation */
 .bb-team-card-interactive {
   transition:
     transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -164,6 +239,12 @@
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+  .bb-fluid-orb-1,
+  .bb-fluid-orb-2,
+  .bb-fluid-orb-3,
+  .bb-fluid-orb-4 {
+    animation: none !important;
   }
   .bb-glow-button,
   .bb-btn-interactive,

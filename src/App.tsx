@@ -55,6 +55,7 @@ import { isSuperAdminEmail } from './utils/adminRbac';
 import { Navbar, PageRoute } from './components/Navbar';
 import { Footer, FooterInfoPageKey } from './components/layout/Footer';
 import { HomePage } from './pages/HomePage';
+import { AestheticLiveBackground } from './components/common/AestheticLiveBackground';
 
 const BrowsePage = lazy(() =>
   import('./pages/BrowsePage').then((m) => ({ default: m.BrowsePage }))
@@ -1528,7 +1529,8 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0B0F19] text-[#F8FAFC] bb-ambient-canvas relative overflow-x-clip">
+    <div className="min-h-screen flex flex-col bg-transparent text-slate-900 dark:text-[#F8FAFC] relative overflow-x-clip transition-colors duration-200">
+      <AestheticLiveBackground />
       <BorrowBoxIntro
         isActive={isIntroActive}
         onComplete={() => {
