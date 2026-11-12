@@ -475,7 +475,7 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
           className="hidden lg:inline-flex relative items-center justify-center h-9 px-2.5 rounded-lg bg-white/80 dark:bg-[#161E2E] border border-slate-200/80 dark:border-white/[0.08] text-slate-700 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F8FAFC] hover:border-slate-300 dark:hover:border-white/[0.16] bb-btn-interactive cursor-pointer"
         >
           <Heart
-            className={`w-4 h-4 transition-transform duration-200 ${wishlistCount > 0 ? 'fill-[#8B5CF6] text-[#8B5CF6] scale-110' : ''
+            className={`w-4 h-4 transition-transform duration-200 ${wishlistCount > 0 ? 'fill-[#F05A36] text-[#F05A36] scale-110' : ''
               }`}
           />
           {wishlistCount > 0 && (
@@ -516,11 +516,11 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
               handleNavigate({ page: 'admin' });
             }}
             className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold bb-btn-interactive whitespace-nowrap ${currentRoute.page === 'admin'
-                ? 'bg-[#8B5CF6] text-white'
-                : 'bg-[#8B5CF6]/15 text-[#F8FAFC] border border-[#8B5CF6]/35 hover:bg-[#8B5CF6]/25'
+                ? 'bg-[#F05A36] text-white'
+                : 'bg-[#F05A36]/15 text-[#F05A36] dark:text-[#FF8A65] border border-[#F05A36]/35 hover:bg-[#F05A36]/25'
               }`}
           >
-            <Shield className="w-3.5 h-3.5 text-[#8B5CF6] shrink-0" />
+            <Shield className="w-3.5 h-3.5 text-[#F05A36] shrink-0" />
             <span>Admin Panel</span>
           </a>
         )}
@@ -814,7 +814,7 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
               type="button"
               data-testid="desktop-signup-button"
               onClick={() => handleNavigate({ page: 'signup' })}
-              className="h-9 px-4 rounded-lg bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-semibold bb-glow-button cursor-pointer whitespace-nowrap"
+              className="h-9 px-4 rounded-lg bg-[#F05A36] hover:bg-[#E65100] text-white text-xs font-semibold bb-glow-button cursor-pointer whitespace-nowrap"
             >
               Sign Up
             </button>

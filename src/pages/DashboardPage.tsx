@@ -22,6 +22,7 @@ import {
   XCircle,
   FileText,
   Printer,
+  Trash2,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import {
@@ -58,6 +59,7 @@ interface DashboardPageProps {
   onNavigate: (route: PageRoute) => void;
   onEditListing: (listing: ProductListing) => void;
   onToggleArchiveListing: (listing: ProductListing) => Promise<void>;
+  onDeleteListing?: (listingId: string) => Promise<void> | void;
   onUpdateBookingWorkflow: (
     booking: RentalBookingRecord,
     nextStatus: BookingStatus,
@@ -180,6 +182,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onNavigate,
   onEditListing,
   onToggleArchiveListing,
+  onDeleteListing,
   onUpdateBookingWorkflow,
   onSendMessage,
   onLoadMessagesForBooking,
@@ -194,6 +197,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const [selectedInvoiceBooking, setSelectedInvoiceBooking] =
     useState<RentalBookingRecord | null>(null);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [listingToDelete, setListingToDelete] = useState<ProductListing | null>(null);
 
   // Expanded booking panel states
   const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
@@ -1357,40 +1361,40 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 </div>
 
                 {/* Owner's Listings Management */}
-                <div className="space-y-4 pt-6 border-t border-white/[0.08]">
-                  <div className="flex items-center justify-between">
+                <div className="space-y-4 pt-6 border-t border-slate-200/80 dark:border-white/[0.08]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                      <h2 className="text-lg font-semibold text-[#F8FAFC]">
+                      <h2 className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC]">
                         My Published Listings ({myListings.length})
                       </h2>
-                      <p className="text-xs text-[#94A3B8]">
-                        Edit pricing, update availability windows, or archive
-                        items when unavailable.
+                      <p className="text-xs text-slate-500 dark:text-[#94A3B8]">
+                        Manage pricing, update availability, or delete inactive equipment.
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => onNavigate({ page: 'list-item' })}
-                      className="px-4 py-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-semibold rounded-lg cursor-pointer"
+                      className="px-4 py-2 bg-[#F05A36] hover:bg-[#E65100] text-white text-xs font-semibold rounded-xl bb-glow-button cursor-pointer flex items-center justify-center gap-1.5 self-start sm:self-auto"
                     >
-                      + List New Item
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      <span>List New Item</span>
                     </button>
                   </div>
 
                   {myListings.length === 0 ? (
-                    <div className="p-10 border border-white/[0.08] rounded-xl bg-[#161E2E] text-center space-y-3">
-                      <Package className="w-6 h-6 text-[#06B6D4] mx-auto" />
-                      <h3 className="text-base font-semibold text-[#F8FAFC]">
-                        You haven’t published any community listings yet
+                    <div className="p-10 border border-slate-200/80 dark:border-white/[0.08] rounded-2xl bg-white/80 dark:bg-[#161E2E] backdrop-blur-md text-center space-y-3">
+                      <Package className="w-8 h-8 text-[#F05A36] mx-auto opacity-80" />
+                      <h3 className="text-base font-bold text-slate-900 dark:text-[#F8FAFC]">
+                        You haven’t published any neighborhood listings yet
                       </h3>
-                      <p className="text-xs text-[#94A3B8] max-w-md mx-auto">
-                        Publish your unused camera, console, drill, or musical
-                        instrument to earn rental income in ₹.
+                      <p className="text-xs text-slate-500 dark:text-[#94A3B8] max-w-md mx-auto leading-relaxed">
+                        Got cameras, consoles, power tools, or camping gear sitting idle?
+                        List them in your neighborhood and start earning rental income in ₹.
                       </p>
                       <button
                         type="button"
                         onClick={() => onNavigate({ page: 'list-item' })}
-                        className="px-4 py-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-semibold rounded-lg cursor-pointer"
+                        className="px-5 py-2.5 bg-[#F05A36] hover:bg-[#E65100] text-white text-xs font-semibold rounded-xl bb-glow-button cursor-pointer"
                       >
                         Create Your First Listing
                       </button>
@@ -1400,61 +1404,150 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       {myListings.map((item) => (
                         <div
                           key={item.id}
-                          className="p-5 border border-white/[0.08] rounded-xl bg-[#161E2E] flex flex-col justify-between gap-4"
+                          className="p-5 border border-slate-200/80 dark:border-white/[0.08] rounded-2xl bg-white/90 dark:bg-[#161E2E] backdrop-blur-md flex flex-col justify-between gap-4 bb-card-interactive"
                         >
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between text-xs text-[#94A3B8]">
-                              <span className="font-semibold text-[#8B5CF6]">
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-bold text-[#F05A36] uppercase tracking-wider text-[11px]">
                                 {item.category}
                               </span>
-                              <span className="font-mono-tabular">
+                              <span className="font-mono-tabular text-slate-500 dark:text-[#94A3B8] text-[11px]">
                                 Status:{' '}
-                                <strong className="text-[#22C55E]">
+                                <strong className="text-emerald-500">
                                   {item.status || 'active'}
                                 </strong>
                               </span>
                             </div>
-                            <h3 className="text-base font-semibold text-[#F8FAFC]">
+                            <h3 className="text-base font-bold text-slate-900 dark:text-[#F8FAFC]">
                               {item.title}
                             </h3>
-                            <p className="text-xs text-[#94A3B8] font-mono-tabular">
-                              {formatINR(item.dailyPriceINR)}/day · Deposit:{' '}
-                              {formatINR(item.refundableDepositINR)} ·{' '}
+                            <p className="text-xs text-slate-500 dark:text-[#94A3B8] font-mono-tabular">
+                              <strong className="text-slate-900 dark:text-[#F8FAFC] text-sm font-semibold">
+                                {formatINR(item.dailyPriceINR)}
+                              </strong>
+                              /day · Deposit: {formatINR(item.refundableDepositINR)} ·{' '}
                               {item.availableFrom} to {item.availableTo}
                             </p>
                           </div>
 
-                          <div className="pt-3 border-t border-white/[0.08] flex items-center gap-2.5">
+                          <div className="pt-3 border-t border-slate-200/80 dark:border-white/[0.08] flex items-center gap-2 flex-wrap">
                             <button
                               type="button"
                               onClick={() => onEditListing(item)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1D293B] hover:bg-[#334155] text-[#F8FAFC] text-xs font-semibold rounded-lg cursor-pointer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#1D293B] dark:hover:bg-[#334155] text-slate-800 dark:text-[#F8FAFC] text-xs font-semibold rounded-lg cursor-pointer transition-colors"
                             >
-                              <Edit3 className="w-3.5 h-3.5" />
-                              Edit Listing
+                              <Edit3 className="w-3.5 h-3.5 text-[#F05A36]" />
+                              <span>Edit</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => void onToggleArchiveListing(item)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#111827] hover:bg-[#1D293B] text-[#94A3B8] border border-white/[0.08] text-xs font-semibold rounded-lg cursor-pointer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-[#111827] hover:bg-slate-100 dark:hover:bg-[#1D293B] text-slate-600 dark:text-[#94A3B8] border border-slate-200 dark:border-white/[0.08] text-xs font-semibold rounded-lg cursor-pointer transition-colors"
                             >
                               <Archive className="w-3.5 h-3.5" />
-                              {item.status === 'archived'
-                                ? 'Restore to Active'
-                                : 'Archive Listing'}
+                              <span>
+                                {item.status === 'archived'
+                                  ? 'Restore'
+                                  : 'Archive'}
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setListingToDelete(item)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 text-xs font-semibold rounded-lg cursor-pointer transition-colors"
+                              title="Permanently remove listing"
+                              aria-label={`Remove listing ${item.title}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Delete</span>
                             </button>
                             <button
                               type="button"
                               onClick={() =>
                                 onNavigate({ page: 'details', itemId: item.id })
                               }
-                              className="ml-auto text-xs font-semibold text-[#8B5CF6] hover:text-[#A78BFA] cursor-pointer"
+                              className="ml-auto text-xs font-semibold text-[#F05A36] hover:text-[#FF8A65] cursor-pointer"
                             >
                               View →
                             </button>
                           </div>
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {/* Delete Listing Confirmation Modal */}
+                  {listingToDelete && (
+                    <div
+                      role="dialog"
+                      aria-modal="true"
+                      aria-labelledby="delete-listing-title"
+                      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+                    >
+                      <div className="w-full max-w-md rounded-2xl bg-white dark:bg-[#121824] border border-slate-200 dark:border-white/[0.1] shadow-2xl p-6 space-y-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center shrink-0">
+                            <Trash2 className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h3 id="delete-listing-title" className="text-base font-bold text-slate-900 dark:text-[#F8FAFC]">
+                              Remove Community Listing?
+                            </h3>
+                            <p className="text-xs text-slate-500 dark:text-[#94A3B8]">
+                              This action cannot be undone.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#1A2234] border border-slate-200/80 dark:border-white/[0.06] flex items-center gap-3">
+                          {listingToDelete.imageUrl && (
+                            <img
+                              src={listingToDelete.imageUrl}
+                              alt={listingToDelete.title}
+                              className="w-12 h-12 rounded-lg object-cover shrink-0"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                              }}
+                            />
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-900 dark:text-[#F8FAFC] truncate">
+                              {listingToDelete.title}
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-[#94A3B8]">
+                              {listingToDelete.city} · {formatINR(listingToDelete.dailyPriceINR)}/day
+                            </p>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-slate-600 dark:text-[#94A3B8] leading-relaxed">
+                          Are you sure you want to remove this listing? It will immediately disappear from the marketplace, search results, and your inventory.
+                        </p>
+
+                        <div className="flex items-center justify-end gap-2.5 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => setListingToDelete(null)}
+                            className="px-4 py-2 rounded-xl text-xs font-semibold border border-slate-200 dark:border-white/[0.1] text-slate-700 dark:text-[#94A3B8] hover:bg-slate-100 dark:hover:bg-[#1E293B] cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const id = listingToDelete.id;
+                              setListingToDelete(null);
+                              if (onDeleteListing) {
+                                await onDeleteListing(id);
+                              }
+                            }}
+                            className="px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-500/20 cursor-pointer flex items-center gap-1.5"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Remove Listing</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

@@ -4,16 +4,33 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BorrowBox — Rent What You Need. Earn From What You Own.</title>
-    <meta name="description" content="Peer-to-peer rental marketplace in India. Rent cameras, consoles, tools, and gear from nearby owners in Indian Rupees (₹)." />
+    <meta name="description" content="Peer-to-peer rental marketplace in India. Rent cameras, consoles, tools, and gear from nearby neighbors in Indian Rupees (₹)." />
     <link rel="canonical" href="https://borrow-box-src.vercel.app/" />
     <meta property="og:url" content="https://borrow-box-src.vercel.app/" />
     <meta property="og:title" content="BorrowBox — Rent What You Need. Earn From What You Own." />
-    <meta property="og:description" content="Peer-to-peer rental marketplace in India. Rent cameras, consoles, tools, and gear from nearby owners in Indian Rupees (₹)." />
+    <meta property="og:description" content="Peer-to-peer rental marketplace in India. Rent cameras, consoles, tools, and gear from nearby neighbors in Indian Rupees (₹)." />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="BorrowBox" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="BorrowBox — Rent What You Need. Earn From What You Own." />
-    <meta name="twitter:description" content="Peer-to-peer rental marketplace in India. Rent cameras, consoles, tools, and gear from nearby owners in Indian Rupees (₹)." />
+    <meta name="twitter:description" content="Peer-to-peer rental marketplace in India. Rent cameras, consoles, tools, and gear from nearby neighbors in Indian Rupees (₹)." />
+    <script>
+      (function() {
+        try {
+          var stored = localStorage.getItem('borrowbox_theme');
+          var isDark = stored ? stored === 'dark' : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light');
+            document.documentElement.style.colorScheme = 'dark';
+          } else {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
+            document.documentElement.style.colorScheme = 'light';
+          }
+        } catch (e) {}
+      })();
+    </script>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -39,7 +56,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
   </head>
-  <body class="bg-[#F8FAFC] text-[#0F172A] dark:bg-[#0B0F19] dark:text-[#F8FAFC] antialiased selection:bg-[#8B5CF6]/30 selection:text-[#F8FAFC] transition-colors duration-200">
+  <body class="bg-[#FAFAFB] text-[#0F172A] dark:bg-[#0B0F17] dark:text-[#F8FAFC] antialiased selection:bg-[#F05A36]/30 selection:text-slate-900 dark:selection:text-[#F8FAFC] transition-colors duration-200">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

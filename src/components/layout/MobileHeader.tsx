@@ -206,7 +206,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                 type="button"
                 data-testid="mobile-signup-button"
                 onClick={() => handleMobileNavigate({ page: 'signup' })}
-                className="min-h-[36px] px-3 sm:px-3.5 py-1.5 rounded-lg bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-semibold bb-glow-button cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8B5CF6]"
+                className="min-h-[36px] px-3 sm:px-3.5 py-1.5 rounded-lg bg-[#F05A36] hover:bg-[#E65100] text-white text-xs font-semibold bb-glow-button cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F05A36]"
               >
                 Sign Up
               </button>
@@ -753,7 +753,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                             onClick={() =>
                               handleMobileNavigate({ page: 'signup' })
                             }
-                            className="min-h-[44px] py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-xs font-semibold text-white bb-glow-button cursor-pointer"
+                            className="min-h-[44px] py-2.5 rounded-xl bg-[#F05A36] hover:bg-[#E65100] text-xs font-semibold text-white bb-glow-button cursor-pointer"
                           >
                             Sign Up
                           </button>

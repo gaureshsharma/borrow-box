@@ -26,3 +26,4 @@ test('AestheticLiveBackground Configuration: verifies color tokens and animation
     assert.match(cls, /^bb-fluid-orb-[1-4]$/);
   });
 });
+

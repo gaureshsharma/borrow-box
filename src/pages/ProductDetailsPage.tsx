@@ -8,6 +8,7 @@ import {
   QrCode,
   ShieldCheck,
   Star,
+  Trash2,
   UserCheck,
 } from 'lucide-react';
 import {
@@ -37,6 +38,7 @@ interface ProductDetailsPageProps {
   onSubmitBooking: (booking: RentalBookingRecord) => Promise<void> | void;
   existingBookingsForListing: RentalBookingRecord[];
   reviewsForListing: RentalReviewRecord[];
+  onDeleteListing?: (listingId: string) => Promise<void> | void;
 }
 
 export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
@@ -47,8 +49,10 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
   onSubmitBooking,
   existingBookingsForListing,
   reviewsForListing,
+  onDeleteListing,
 }) => {
   const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(0);
+  const [confirmDeleteModalOpen, setConfirmDeleteModalOpen] = useState(false);
   const [startDate, setStartDate] = useState('2026-11-05');
   const [endDate, setEndDate] = useState('2026-11-08');
   const [borrowerName, setBorrowerName] = useState(demoUser?.name || '');
@@ -286,6 +290,86 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
             This product is a demonstration template for testing BorrowBox
             pricing and booking flows. It is not an active neighborhood listing
             from a verified community owner.
+          </div>
+        )}
+
+        {demoUser && listing && (demoUser.uid === listing.owner?.id || demoUser.isAdmin) && (
+          <div className="mb-8 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-2.5">
+              <ShieldCheck className="w-5 h-5 text-amber-500 shrink-0" />
+              <div>
+                <p className="text-xs font-bold text-slate-900 dark:text-[#F8FAFC]">
+                  Owner Inventory Controls
+                </p>
+                <p className="text-[11px] text-slate-600 dark:text-[#94A3B8]">
+                  You have full ownership of this item listing.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteModalOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold cursor-pointer flex items-center gap-1.5 shadow-sm transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete Listing</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {confirmDeleteModalOpen && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="details-delete-title"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          >
+            <div className="w-full max-w-md rounded-2xl bg-white dark:bg-[#121824] border border-slate-200 dark:border-white/[0.1] shadow-2xl p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 id="details-delete-title" className="text-base font-bold text-slate-900 dark:text-[#F8FAFC]">
+                    Remove Community Listing?
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-[#94A3B8]">
+                    This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-600 dark:text-[#94A3B8] leading-relaxed">
+                Are you sure you want to remove &ldquo;{listing.title}&rdquo;? It will immediately disappear from search results and your inventory.
+              </p>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmDeleteModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold border border-slate-200 dark:border-white/[0.1] text-slate-700 dark:text-[#94A3B8] hover:bg-slate-100 dark:hover:bg-[#1E293B] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setConfirmDeleteModalOpen(false);
+                    if (onDeleteListing) {
+                      await onDeleteListing(listing.id);
+                    }
+                    onNavigate({ page: 'browse' });
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-500/20 cursor-pointer flex items-center gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Remove Listing</span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

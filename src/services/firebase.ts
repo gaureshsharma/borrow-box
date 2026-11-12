@@ -17,6 +17,7 @@ import {
 import {
   Timestamp,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocFromServer,
@@ -776,6 +777,44 @@ export async function updateListingInFirestore(
   } catch (error) {
     if (!isOfflineOrTokenError(error)) {
       handleFirestoreError(error, OperationType.UPDATE, path);
+    }
+  }
+}
+
+/**
+ * Permanently deletes a community listing from Firestore `/listings/{listingId}`
+ * and clears it from local cache storage immediately.
+ */
+export async function deleteListingFromFirestore(
+  listingId: string,
+  requesterId?: string
+): Promise<void> {
+  const path = `listings/${listingId}`;
+
+  // 1. Immediately remove from local storage cache
+  const existingLocal = readLocalJson<ProductListing[]>(
+    LOCAL_STORAGE_KEYS.COMMUNITY_LISTINGS,
+    []
+  );
+  const filtered = existingLocal.filter((item) => item.id !== listingId);
+  writeLocalJson(LOCAL_STORAGE_KEYS.COMMUNITY_LISTINGS, filtered);
+
+  // 2. Remove from Firestore with ownership check
+  try {
+    const listingRef = doc(db, 'listings', listingId);
+    if (requesterId) {
+      const snap = await getDoc(listingRef);
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.ownerId && data.ownerId !== requesterId) {
+          throw new Error('Unauthorized: Only the listing owner can delete this listing.');
+        }
+      }
+    }
+    await deleteDoc(listingRef);
+  } catch (error) {
+    if (!isOfflineOrTokenError(error)) {
+      handleFirestoreError(error, OperationType.DELETE, path);
     }
   }
 }

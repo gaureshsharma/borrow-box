@@ -28,6 +28,7 @@ import {
   auth,
   createBookingInFirestore,
   createListingInFirestore,
+  deleteListingFromFirestore,
   createReviewInFirestore,
   ensureOrLoadUserProfile,
   fetchActiveCommunityListings,
@@ -867,6 +868,29 @@ export default function App() {
     );
   };
 
+  const handleDeleteListing = async (listingId: string) => {
+    const targetListing = listings.find((item) => item.id === listingId);
+    const title = targetListing?.title || 'Listing';
+
+    // 1. Optimistic UI update: Remove immediately from state so it disappears instantly
+    setListings((prev) => prev.filter((item) => item.id !== listingId));
+    if (editingListing?.id === listingId) {
+      setEditingListing(null);
+    }
+
+    // 2. Persist deletion in Firestore and local storage
+    if (userProfile && targetListing && !targetListing.isDemoData) {
+      try {
+        await deleteListingFromFirestore(listingId, userProfile.uid);
+      } catch (err) {
+        console.error('Failed to delete listing from remote store:', err);
+      }
+    }
+
+    // 3. User feedback toast
+    addNotification('Listing Removed', `"${title}" was removed successfully.`);
+  };
+
   const handleSubmitBooking = async (booking: RentalBookingRecord) => {
     if (userProfile && !booking.isDemoTransaction) {
       try {
@@ -1229,6 +1253,7 @@ export default function App() {
           reviewsForListing={reviews.filter(
             (rev) => rev.listingId === currentRoute.itemId
           )}
+          onDeleteListing={handleDeleteListing}
         />
       );
     }
@@ -1264,6 +1289,7 @@ export default function App() {
             handleNavigate({ page: 'list-item' });
           }}
           onToggleArchiveListing={handleToggleArchiveListing}
+          onDeleteListing={handleDeleteListing}
           onUpdateBookingWorkflow={handleUpdateBookingWorkflow}
           onSendMessage={handleSendMessage}
           onLoadMessagesForBooking={handleLoadMessagesForBooking}
