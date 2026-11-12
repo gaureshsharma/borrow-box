@@ -444,7 +444,11 @@ export default function App() {
     setListingsError(null);
     try {
       const [allMarketplaceItems, verifiedReviews] = await Promise.all([
-        loadAllCommunityListings(),
+        loadAllCommunityListings({
+          requesterUid: userProfile?.uid,
+          role: userProfile?.role,
+          email: userProfile?.email,
+        }),
         fetchVerifiedReviewsFromFirestore().catch(() => []),
       ]);
       setListings(allMarketplaceItems);
@@ -820,8 +824,8 @@ export default function App() {
     savedListing: ProductListing,
     isEdit: boolean
   ) => {
-    // 1. Resilient unified persistence (localStorage + Supabase)
-    const persisted = await persistMarketplaceListing(savedListing, isEdit);
+    // 1. Resilient unified persistence (localStorage + API + Firestore + Supabase)
+    const persisted = await persistMarketplaceListing(savedListing, isEdit, userProfile);
 
     // 2. Safe async Firestore sync (catches without throwing)
     if (userProfile && !savedListing.isDemoData) {
@@ -854,7 +858,7 @@ export default function App() {
     listingId: string,
     relist: boolean
   ) => {
-    await toggleListingListedState(listingId, relist);
+    await toggleListingListedState(listingId, relist, userProfile);
     setListings((prev) =>
       prev.map((item) =>
         item.id === listingId
@@ -882,7 +886,7 @@ export default function App() {
       status: nextStatus,
       isListed: nextStatus !== 'archived',
     };
-    await persistMarketplaceListing(updated, true);
+    await persistMarketplaceListing(updated, true, userProfile);
     if (!listing.isDemoData && userProfile) {
       try {
         await updateListingInFirestore(updated);
@@ -913,9 +917,9 @@ export default function App() {
       setEditingListing(null);
     }
 
-    // 2. Persist deletion in unified store (localStorage + Supabase)
+    // 2. Persist deletion in unified store (localStorage + API + Supabase)
     try {
-      await deleteMarketplaceListing(listingId);
+      await deleteMarketplaceListing(listingId, userProfile);
     } catch (err) {
       console.warn('Failed deleting from marketplace store:', err);
     }

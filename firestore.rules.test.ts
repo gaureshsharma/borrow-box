@@ -7,9 +7,11 @@ import fs from 'node:fs';
  * Verifies the structure, invariants, and all 12 Dirty Dozen attack vectors against the Firestore ruleset.
  */
 
-const rulesSource = fs.existsSync('./firestore.rules')
-  ? fs.readFileSync('./firestore.rules', 'utf8')
-  : fs.readFileSync('./DRAFT_firestore.rules', 'utf8');
+const rulesSource = (
+  fs.existsSync('./firestore.rules')
+    ? fs.readFileSync('./firestore.rules', 'utf8')
+    : fs.readFileSync('./DRAFT_firestore.rules', 'utf8')
+).replace(/\r\n/g, '\n');
 
 interface MockAuth {
   uid: string;

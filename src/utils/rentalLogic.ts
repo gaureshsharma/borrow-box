@@ -317,6 +317,10 @@ export function filterAndSortListings(
       !criteria.includeArchived &&
       (item.status === 'archived' ||
         item.status === 'unlisted' ||
+        item.status === 'paused' ||
+        item.status === 'draft' ||
+        item.status === 'pending' ||
+        item.status === 'rejected' ||
         item.isListed === false)
     ) {
       return false;

@@ -322,9 +322,9 @@ service cloud.firestore {
         && data.minRentalDays >= 1
         && data.minRentalDays <= 60
         && data.status is string
-        && data.status.size() >= 6
-        && data.status.size() <= 10
-        && data.status in ['active', 'archived']
+        && data.status.size() >= 5
+        && data.status.size() <= 12
+        && data.status in ['active', 'archived', 'paused', 'unlisted', 'draft', 'pending', 'rejected']
         && data.cancellationPolicy is string
         && data.cancellationPolicy.size() >= 5
         && data.cancellationPolicy.size() <= 80
@@ -943,7 +943,7 @@ service cloud.firestore {
           )
         );
 
-      allow delete: if isSignedIn() && isValidId(listingId) && isAdmin();
+      allow delete: if isSignedIn() && isValidId(listingId) && (existing().ownerId == request.auth.uid || isAdmin());
     }
 
     // 8. Collection Rules: Rental Bookings (/bookings/{bookingId})

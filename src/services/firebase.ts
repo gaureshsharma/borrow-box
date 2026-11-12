@@ -701,7 +701,7 @@ export async function createListingInFirestore(
     availableFrom: (listing.availableFrom || '2026-10-29').slice(0, 10),
     availableTo: (listing.availableTo || '2026-12-31').slice(0, 10),
     minRentalDays: Math.max(1, Math.min(60, Math.round(listing.minRentalDays || 1))),
-    status: listing.status === 'archived' ? 'archived' : 'active',
+    status: listing.status || 'active',
     cancellationPolicy: (
       listing.cancellationPolicy || 'Flexible (Full refund 24h prior)'
     ).slice(0, 80),
@@ -765,7 +765,7 @@ export async function updateListingInFirestore(
     availableFrom: (listing.availableFrom || '2026-10-29').slice(0, 10),
     availableTo: (listing.availableTo || '2026-12-31').slice(0, 10),
     minRentalDays: Math.max(1, Math.min(60, Math.round(listing.minRentalDays || 1))),
-    status: listing.status === 'archived' ? 'archived' : 'active',
+    status: listing.status || 'active',
     cancellationPolicy: (
       listing.cancellationPolicy || 'Flexible (Full refund 24h prior)'
     ).slice(0, 80),

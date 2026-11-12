@@ -7,6 +7,7 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { registerSupportRoutes } from './src/server/supportBackend.ts';
 import { registerContactRoutes } from './src/server/contactBackend.ts';
 import { registerCheckoutRoutes } from './src/server/checkoutBackend.ts';
+import { registerInventoryRoutes } from './src/server/inventoryBackend.ts';
 import { ALL_CITIES, hasDateRangeOverlap } from './src/utils/rentalLogic.ts';
 import { PRIMARY_SUPER_ADMIN_EMAIL } from './src/utils/adminRbac.ts';
 
@@ -37,6 +38,7 @@ async function startServer() {
   registerSupportRoutes(app);
   registerContactRoutes(app);
   registerCheckoutRoutes(app);
+  registerInventoryRoutes(app);
 
   // 1. Server-side booking & date overlap validation endpoint
   app.post('/api/marketplace/validate-booking', (req, res) => {

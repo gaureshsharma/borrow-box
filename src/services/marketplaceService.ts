@@ -1,6 +1,12 @@
 import { supabase } from './supabase';
 import { ProductListing, BorrowBoxUserProfile, IndianCity, UserActiveMode } from '../types/marketplace';
 import { DEMO_PRODUCT_LISTINGS } from '../data/demoCatalog';
+import {
+  fetchActiveCommunityListings,
+  createListingInFirestore,
+  updateListingInFirestore,
+  deleteListingFromFirestore,
+} from './firebase';
 
 export const STORAGE_KEYS = {
   ITEMS: 'borrowbox_items',
@@ -30,42 +36,95 @@ function writeStorage<T>(key: string, value: T): void {
 }
 
 /**
- * Loads all community and user listings from localStorage and Supabase.
- * Guaranteed to NEVER throw raw Firebase or network errors.
+ * Loads all community and user listings across all layers:
+ * 1. Base DEMO_PRODUCT_LISTINGS
+ * 2. Shared backend marketplace inventory (/api/marketplace/listings)
+ * 3. Firestore /listings collection (status == 'active')
+ * 4. Local storage cache (offline resilience)
+ * 5. Supabase listings table (if configured)
+ *
+ * Guarantees zero duplicate entries by item ID and never throws.
  */
-export async function loadAllCommunityListings(): Promise<ProductListing[]> {
-  // 1. Read local items from both current and legacy keys
-  const localItems = readStorage<ProductListing[]>(STORAGE_KEYS.ITEMS, []);
-  const legacyItems = readStorage<ProductListing[]>(STORAGE_KEYS.COMMUNITY_LISTINGS_LEGACY, []);
-
+export async function loadAllCommunityListings(options?: {
+  ownerId?: string;
+  requesterUid?: string;
+  role?: string;
+  email?: string;
+}): Promise<ProductListing[]> {
   const mergedMap = new Map<string, ProductListing>();
 
-  // Add demo listings as base
+  // 1. Add demo listings as foundation
   for (const item of DEMO_PRODUCT_LISTINGS) {
     mergedMap.set(item.id, item);
   }
 
-  // Add legacy items
+  // 2. Read local items from both current and legacy cache keys
+  const localItems = readStorage<ProductListing[]>(STORAGE_KEYS.ITEMS, []);
+  const legacyItems = readStorage<ProductListing[]>(STORAGE_KEYS.COMMUNITY_LISTINGS_LEGACY, []);
+
   for (const item of legacyItems) {
     if (item && item.id) {
       mergedMap.set(item.id, {
         ...item,
-        isListed: item.isListed ?? (item.status !== 'unlisted' && item.status !== 'archived'),
+        isListed: item.isListed ?? (item.status !== 'unlisted' && item.status !== 'archived' && item.status !== 'paused'),
       });
     }
   }
 
-  // Add primary local items
   for (const item of localItems) {
     if (item && item.id) {
       mergedMap.set(item.id, {
         ...item,
-        isListed: item.isListed ?? (item.status !== 'unlisted' && item.status !== 'archived'),
+        isListed: item.isListed ?? (item.status !== 'unlisted' && item.status !== 'archived' && item.status !== 'paused'),
       });
     }
   }
 
-  // 2. Safely attempt Supabase sync in background (non-blocking)
+  // 3. Fetch from shared backend API (/api/marketplace/listings)
+  try {
+    const queryParams = new URLSearchParams();
+    if (options?.ownerId) queryParams.set('ownerId', options.ownerId);
+    if (options?.requesterUid) queryParams.set('requesterUid', options.requesterUid);
+    if (options?.role) queryParams.set('role', options.role);
+    if (options?.email) queryParams.set('email', options.email);
+
+    const url = `/api/marketplace/listings${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const res = await fetch(url, { method: 'GET' });
+    if (res.ok) {
+      const json = await res.json();
+      if (json && Array.isArray(json.listings)) {
+        for (const item of json.listings) {
+          if (item && item.id) {
+            mergedMap.set(item.id, {
+              ...item,
+              isListed: item.isListed ?? (item.status !== 'unlisted' && item.status !== 'archived' && item.status !== 'paused'),
+            });
+          }
+        }
+      }
+    }
+  } catch {
+    // Non-blocking: API server may be unavailable in pure static client deployment
+  }
+
+  // 4. Fetch directly from Firestore `/listings` (queries active items publicly)
+  try {
+    const firestoreItems = await fetchActiveCommunityListings();
+    if (Array.isArray(firestoreItems)) {
+      for (const item of firestoreItems) {
+        if (item && item.id) {
+          mergedMap.set(item.id, {
+            ...item,
+            isListed: item.isListed ?? (item.status !== 'unlisted' && item.status !== 'archived' && item.status !== 'paused'),
+          });
+        }
+      }
+    }
+  } catch {
+    // Non-blocking fallback
+  }
+
+  // 5. Safely attempt Supabase sync in background
   try {
     const { data, error } = await supabase.from('listings').select('*');
     if (!error && Array.isArray(data)) {
@@ -92,7 +151,7 @@ export async function loadAllCommunityListings(): Promise<ProductListing[]> {
             featured: Boolean(row.featured),
             isDemoData: false,
             status: row.status || (row.is_listed === false ? 'unlisted' : 'available'),
-            isListed: row.is_listed !== false && row.status !== 'unlisted',
+            isListed: row.is_listed !== false && row.status !== 'unlisted' && row.status !== 'paused',
             cancellationPolicy: row.cancellation_policy || 'Flexible (Full refund 24h prior)',
             imageUrl: row.image_url || 'sony_camera',
             gallery: row.gallery || [],
@@ -113,11 +172,12 @@ export async function loadAllCommunityListings(): Promise<ProductListing[]> {
       }
     }
   } catch {
-    // Supabase table or RLS not yet migrated; gracefully use localStorage
+    // Non-blocking if Supabase table is not configured
   }
 
   const allItems = Array.from(mergedMap.values());
-  // Save unified list back to localStorage
+
+  // Save unified community items back to localStorage for instant offline access
   writeStorage(
     STORAGE_KEYS.ITEMS,
     allItems.filter((i) => !i.isDemoData)
@@ -127,19 +187,20 @@ export async function loadAllCommunityListings(): Promise<ProductListing[]> {
 }
 
 /**
- * Saves or updates a listing in persistent storage (localStorage + Supabase).
+ * Saves or updates a listing across all storage layers (localStorage, backend API, Firestore, Supabase).
  * Never throws permission errors.
  */
 export async function persistMarketplaceListing(
   listing: ProductListing,
-  isEdit = false
+  isEdit = false,
+  requesterProfile?: BorrowBoxUserProfile | null
 ): Promise<ProductListing> {
   const currentItems = readStorage<ProductListing[]>(STORAGE_KEYS.ITEMS, []);
   
   const standardized: ProductListing = {
     ...listing,
-    isListed: listing.isListed ?? (listing.status !== 'unlisted' && listing.status !== 'archived'),
-    status: listing.status || 'available',
+    status: listing.status || 'active',
+    isListed: listing.isListed ?? (listing.status !== 'unlisted' && listing.status !== 'archived' && listing.status !== 'paused'),
     createdAt: listing.createdAt || new Date().toISOString(),
   };
 
@@ -149,7 +210,43 @@ export async function persistMarketplaceListing(
   writeStorage(STORAGE_KEYS.ITEMS, updatedList);
   writeStorage(STORAGE_KEYS.COMMUNITY_LISTINGS_LEGACY, updatedList);
 
-  // 2. Safe async sync to Supabase (try/catch so it never breaks UI if Supabase table is absent)
+  // 2. Sync to shared Backend API (/api/marketplace/listings)
+  try {
+    const endpoint = isEdit
+      ? `/api/marketplace/listings/${standardized.id}`
+      : '/api/marketplace/listings';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    await fetch(endpoint, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        listing: standardized,
+        updates: standardized,
+        requesterUid: requesterProfile?.uid || standardized.owner?.id,
+        requesterEmail: requesterProfile?.email,
+        requesterRole: requesterProfile?.role,
+        requesterName: requesterProfile?.name || standardized.owner?.name,
+      }),
+    });
+  } catch {
+    // Safe non-blocking fallback
+  }
+
+  // 3. Safe sync to Firestore `/listings`
+  if (!standardized.isDemoData) {
+    try {
+      if (isEdit) {
+        await updateListingInFirestore(standardized);
+      } else {
+        await createListingInFirestore(standardized);
+      }
+    } catch {
+      // Safe fallback
+    }
+  }
+
+  // 4. Safe async sync to Supabase (try/catch so it never breaks UI if Supabase table is absent)
   try {
     await supabase.from('listings').upsert({
       id: standardized.id,
@@ -175,43 +272,65 @@ export async function persistMarketplaceListing(
       updated_at: new Date().toISOString(),
     });
   } catch {
-    // Non-fatal if Supabase table does not exist
+    // Non-fatal
   }
 
   return standardized;
 }
 
 /**
- * Unlists or Relists an item.
- * When unlisted: disappears from public marketplace, stays visible in owner's inventory.
+ * Unlists or Relists an item across all storage layers.
+ * When unlisted: disappears from public discovery (Browse, Search, Homepage),
+ * but remains visible in owner's inventory.
  */
 export async function toggleListingListedState(
   listingId: string,
-  relist: boolean
+  relist: boolean,
+  requesterProfile?: BorrowBoxUserProfile | null
 ): Promise<ProductListing | null> {
   const currentItems = readStorage<ProductListing[]>(STORAGE_KEYS.ITEMS, []);
   const target = currentItems.find((i) => i.id === listingId);
   if (!target) return null;
 
-  const nextStatus = relist ? 'available' : 'unlisted';
+  const nextStatus = relist ? 'active' : 'unlisted';
   const updated: ProductListing = {
     ...target,
     isListed: relist,
     status: nextStatus,
   };
 
+  // 1. LocalStorage update
   const updatedList = currentItems.map((i) => (i.id === listingId ? updated : i));
   writeStorage(STORAGE_KEYS.ITEMS, updatedList);
   writeStorage(STORAGE_KEYS.COMMUNITY_LISTINGS_LEGACY, updatedList);
 
+  // 2. Backend API toggle
+  try {
+    await fetch(`/api/marketplace/listings/${listingId}/toggle-status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requesterUid: requesterProfile?.uid || target.owner?.id,
+        requesterEmail: requesterProfile?.email,
+        requesterRole: requesterProfile?.role,
+      }),
+    });
+  } catch {}
+
+  // 3. Firestore update
+  if (!target.isDemoData) {
+    try {
+      await updateListingInFirestore(updated);
+    } catch {}
+  }
+
+  // 4. Supabase update
   try {
     await supabase
       .from('listings')
       .update({ is_listed: relist, status: nextStatus, updated_at: new Date().toISOString() })
       .eq('id', listingId);
-  } catch {
-    // Safe fallback
-  }
+  } catch {}
 
   return updated;
 }
@@ -219,23 +338,46 @@ export async function toggleListingListedState(
 /**
  * Permanently removes an item listing from persistent storage.
  */
-export async function deleteMarketplaceListing(listingId: string): Promise<void> {
+export async function deleteMarketplaceListing(
+  listingId: string,
+  requesterProfile?: BorrowBoxUserProfile | null
+): Promise<void> {
   const currentItems = readStorage<ProductListing[]>(STORAGE_KEYS.ITEMS, []);
+  const target = currentItems.find((i) => i.id === listingId);
   const filtered = currentItems.filter((i) => i.id !== listingId);
 
+  // 1. LocalStorage remove
   writeStorage(STORAGE_KEYS.ITEMS, filtered);
   writeStorage(STORAGE_KEYS.COMMUNITY_LISTINGS_LEGACY, filtered);
 
+  // 2. Backend API remove
+  try {
+    await fetch(`/api/marketplace/listings/${listingId}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requesterUid: requesterProfile?.uid || target?.owner?.id,
+        requesterEmail: requesterProfile?.email,
+        requesterRole: requesterProfile?.role,
+      }),
+    });
+  } catch {}
+
+  // 3. Firestore remove
+  if (target && !target.isDemoData) {
+    try {
+      await deleteListingFromFirestore(listingId, requesterProfile?.uid || target.owner?.id);
+    } catch {}
+  }
+
+  // 4. Supabase remove
   try {
     await supabase.from('listings').delete().eq('id', listingId);
-  } catch {
-    // Safe fallback
-  }
+  } catch {}
 }
 
 /**
  * Saves and updates a user's profile in persistent storage (localStorage + Supabase).
- * Completely eliminates the split-brain Firebase Firestore permission error.
  */
 export async function persistUserProfile(
   uid: string,
@@ -248,7 +390,6 @@ export async function persistUserProfile(
     activeMode?: UserActiveMode;
   }
 ): Promise<BorrowBoxUserProfile> {
-  // 1. Read existing profile from localStorage
   const currentProfile = readStorage<BorrowBoxUserProfile | null>(STORAGE_KEYS.ACTIVE_PROFILE, null);
   const now = new Date().toISOString();
 
@@ -269,15 +410,12 @@ export async function persistUserProfile(
     role: currentProfile?.role || 'user',
   };
 
-  // 2. Save synchronously to localStorage so reloads keep the updated profile
   writeStorage(STORAGE_KEYS.ACTIVE_PROFILE, mergedProfile);
 
-  // Update in user accounts list
   const usersList = readStorage<Record<string, BorrowBoxUserProfile>>(STORAGE_KEYS.USERS, {});
   usersList[mergedProfile.uid] = mergedProfile;
   writeStorage(STORAGE_KEYS.USERS, usersList);
 
-  // 3. Sync to Supabase in a safe try/catch
   try {
     await supabase.from('profiles').upsert({
       id: mergedProfile.uid,
@@ -289,10 +427,7 @@ export async function persistUserProfile(
       active_mode: mergedProfile.activeMode,
       updated_at: now,
     });
-  } catch {
-    // Non-blocking: table may not exist
-  }
+  } catch {}
 
   return mergedProfile;
 }
-
