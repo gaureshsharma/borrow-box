@@ -139,14 +139,14 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
     listing.gallery && listing.gallery.length > 0
       ? listing.gallery
       : [
-          {
-            id: 'default-1',
-            label: 'Primary Studio View',
-            caption: listing.title,
-            imageUrl: listing.imageUrl,
-            viewMode: 'full' as const,
-          },
-        ];
+        {
+          id: 'default-1',
+          label: 'Primary Studio View',
+          caption: listing.title,
+          imageUrl: listing.imageUrl,
+          viewMode: 'full' as const,
+        },
+      ];
 
   const activeGalleryItem =
     galleryItems[selectedGalleryIndex] || galleryItems[0];
@@ -163,7 +163,7 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
     if (!dateAvailability.available) {
       setFormError(
         dateAvailability.reason ||
-          'Selected dates conflict with an existing reservation.'
+        'Selected dates conflict with an existing reservation.'
       );
       return;
     }
@@ -420,11 +420,10 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
                       key={item.id}
                       type="button"
                       onClick={() => setSelectedGalleryIndex(idx)}
-                      className={`text-left p-2 rounded-xl border transition-colors cursor-pointer ${
-                        selectedGalleryIndex === idx
+                      className={`text-left p-2 rounded-xl border transition-colors cursor-pointer ${selectedGalleryIndex === idx
                           ? 'border-[#8B5CF6] bg-[#8B5CF6]/15'
                           : 'border-white/[0.08] hover:border-white/[0.2] bg-[#161E2E]'
-                      }`}
+                        }`}
                     >
                       <div className="aspect-[4/3] rounded-lg overflow-hidden mb-1.5 bg-[#1D293B]">
                         <ProductImage
@@ -603,7 +602,7 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
                           Math.max(
                             0,
                             rentVsBuy.retailPriceINR -
-                              rentVsBuy.estimatedRentalCostINR
+                            rentVsBuy.estimatedRentalCostINR
                           )
                         )}
                       </p>
@@ -635,8 +634,8 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
                         {listing.isDemoData
                           ? 'Sample Preview'
                           : listing.owner.kycVerified
-                          ? 'Identity Verified'
-                          : 'Account Email Registered'}
+                            ? 'Identity Verified'
+                            : 'Account Email Registered'}
                       </span>
                     </div>
                     <p className="text-xs text-[#94A3B8]">
@@ -806,6 +805,13 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
                       New Dates
                     </button>
                   </div>
+                </div>
+              ) : listing.isListed === false || listing.status === 'unlisted' ? (
+                <div className="p-5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-medium space-y-2">
+                  <p className="font-bold text-amber-300 text-sm">Listing Currently Unlisted</p>
+                  <p className="text-amber-200/80">
+                    This item has been paused or unlisted by the owner and is not accepting rental requests at this time.
+                  </p>
                 </div>
               ) : (
                 <form

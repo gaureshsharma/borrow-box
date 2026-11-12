@@ -147,7 +147,12 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
     const suggestions = new Set<string>();
 
     for (const item of listings) {
-      if (item.status === 'archived') continue;
+      if (
+        item.status === 'archived' ||
+        item.status === 'unlisted' ||
+        item.isListed === false
+      )
+        continue;
       if (item.title.toLowerCase().includes(q)) suggestions.add(item.title);
       if (item.category.toLowerCase().includes(q)) suggestions.add(item.category);
       if (item.neighborhood?.toLowerCase().includes(q)) suggestions.add(item.neighborhood);

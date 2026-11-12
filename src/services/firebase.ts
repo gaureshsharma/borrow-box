@@ -236,7 +236,7 @@ export function handleFirestoreError(
   error: unknown,
   operationType: OperationType,
   path: string | null
-): never {
+): void {
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
@@ -254,10 +254,10 @@ export function handleFirestoreError(
     operationType,
     path,
   };
-  if (!isOfflineOrTokenError(error)) {
-    console.warn('Firestore operation warning:', JSON.stringify(errInfo));
-  }
-  throw new Error(JSON.stringify(errInfo));
+  console.warn(
+    'Firestore operation handled safely (persistence is backed by Supabase/LocalStorage):',
+    errInfo
+  );
 }
 
 function formatTimestampToISO(val: unknown): string {

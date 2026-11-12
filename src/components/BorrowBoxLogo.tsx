@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { NeighborHandshakeSymbol } from './ui/BrandLogo';
 
 interface BorrowBoxSymbolProps {

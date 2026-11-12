@@ -198,6 +198,41 @@ test('filterAndSortListings separates genuine community listings from sample cat
   assert.ok(onlySample.every((item) => item.isDemoData));
 });
 
+test('filterAndSortListings strictly excludes unlisted and archived items from public browse', () => {
+  const listingsWithUnlisted: ProductListing[] = [
+    {
+      ...sampleListings[0],
+      id: 'active-item-1',
+      title: 'Active Camera',
+      isListed: true,
+      status: 'available',
+    },
+    {
+      ...sampleListings[1],
+      id: 'unlisted-item-1',
+      title: 'Paused Unlisted Camera',
+      isListed: false,
+      status: 'unlisted',
+    },
+    {
+      ...sampleListings[2],
+      id: 'archived-item-1',
+      title: 'Old Archived Camera',
+      isListed: true,
+      status: 'archived',
+    },
+  ];
+
+  const visible = filterAndSortListings(listingsWithUnlisted, {});
+  assert.equal(visible.length, 1);
+  assert.equal(visible[0].id, 'active-item-1');
+
+  const withArchived = filterAndSortListings(listingsWithUnlisted, {
+    includeArchived: true,
+  });
+  assert.equal(withArchived.length, 3);
+});
+
 test('calculateRentalQuote computes multi-day quotes and weekly discount accurately', () => {
   // 3 days at ₹1,000/day + ₹5,000 deposit
   const shortQuote = calculateRentalQuote(1000, 5000, '2026-11-01', '2026-11-04');

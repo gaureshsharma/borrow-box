@@ -8,6 +8,8 @@ import {
   Calendar,
   CheckCircle2,
   Edit3,
+  Eye,
+  EyeOff,
   IndianRupee,
   LayoutDashboard,
   MessageSquare,
@@ -59,6 +61,7 @@ interface DashboardPageProps {
   onNavigate: (route: PageRoute) => void;
   onEditListing: (listing: ProductListing) => void;
   onToggleArchiveListing: (listing: ProductListing) => Promise<void>;
+  onToggleUnlist?: (listingId: string, relist: boolean) => Promise<void> | void;
   onDeleteListing?: (listingId: string) => Promise<void> | void;
   onUpdateBookingWorkflow: (
     booking: RentalBookingRecord,
@@ -182,6 +185,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onNavigate,
   onEditListing,
   onToggleArchiveListing,
+  onToggleUnlist,
   onDeleteListing,
   onUpdateBookingWorkflow,
   onSendMessage,
@@ -1401,78 +1405,108 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {myListings.map((item) => (
-                        <div
-                          key={item.id}
-                          className="p-5 border border-slate-200/80 dark:border-white/[0.08] rounded-2xl bg-white/90 dark:bg-[#161E2E] backdrop-blur-md flex flex-col justify-between gap-4 bb-card-interactive"
-                        >
-                          <div className="space-y-1.5">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="font-bold text-[#F05A36] uppercase tracking-wider text-[11px]">
-                                {item.category}
-                              </span>
-                              <span className="font-mono-tabular text-slate-500 dark:text-[#94A3B8] text-[11px]">
-                                Status:{' '}
-                                <strong className="text-emerald-500">
-                                  {item.status || 'active'}
+                      {myListings.map((item) => {
+                        const isUnlisted =
+                          item.isListed === false || item.status === 'unlisted';
+                        return (
+                          <div
+                            key={item.id}
+                            className="p-5 border border-slate-200/80 dark:border-white/[0.08] rounded-2xl bg-white/90 dark:bg-[#161E2E] backdrop-blur-md flex flex-col justify-between gap-4 bb-card-interactive"
+                          >
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-bold text-[#F05A36] uppercase tracking-wider text-[11px]">
+                                  {item.category}
+                                </span>
+                                <span className="font-mono-tabular text-slate-500 dark:text-[#94A3B8] text-[11px]">
+                                  Status:{' '}
+                                  <strong
+                                    className={
+                                      isUnlisted
+                                        ? 'text-amber-500'
+                                        : item.status === 'archived'
+                                        ? 'text-slate-400'
+                                        : 'text-emerald-500'
+                                    }
+                                  >
+                                    {isUnlisted ? 'Unlisted' : item.status || 'Active'}
+                                  </strong>
+                                </span>
+                              </div>
+                              <h3 className="text-base font-bold text-slate-900 dark:text-[#F8FAFC]">
+                                {item.title}
+                              </h3>
+                              <p className="text-xs text-slate-500 dark:text-[#94A3B8] font-mono-tabular">
+                                <strong className="text-slate-900 dark:text-[#F8FAFC] text-sm font-semibold">
+                                  {formatINR(item.dailyPriceINR)}
                                 </strong>
-                              </span>
+                                /day · Deposit: {formatINR(item.refundableDepositINR)} ·{' '}
+                                {item.availableFrom} to {item.availableTo}
+                              </p>
                             </div>
-                            <h3 className="text-base font-bold text-slate-900 dark:text-[#F8FAFC]">
-                              {item.title}
-                            </h3>
-                            <p className="text-xs text-slate-500 dark:text-[#94A3B8] font-mono-tabular">
-                              <strong className="text-slate-900 dark:text-[#F8FAFC] text-sm font-semibold">
-                                {formatINR(item.dailyPriceINR)}
-                              </strong>
-                              /day · Deposit: {formatINR(item.refundableDepositINR)} ·{' '}
-                              {item.availableFrom} to {item.availableTo}
-                            </p>
-                          </div>
 
-                          <div className="pt-3 border-t border-slate-200/80 dark:border-white/[0.08] flex items-center gap-2 flex-wrap">
-                            <button
-                              type="button"
-                              onClick={() => onEditListing(item)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#1D293B] dark:hover:bg-[#334155] text-slate-800 dark:text-[#F8FAFC] text-xs font-semibold rounded-lg cursor-pointer transition-colors"
-                            >
-                              <Edit3 className="w-3.5 h-3.5 text-[#F05A36]" />
-                              <span>Edit</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void onToggleArchiveListing(item)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-[#111827] hover:bg-slate-100 dark:hover:bg-[#1D293B] text-slate-600 dark:text-[#94A3B8] border border-slate-200 dark:border-white/[0.08] text-xs font-semibold rounded-lg cursor-pointer transition-colors"
-                            >
-                              <Archive className="w-3.5 h-3.5" />
-                              <span>
-                                {item.status === 'archived'
-                                  ? 'Restore'
-                                  : 'Archive'}
-                              </span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setListingToDelete(item)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 text-xs font-semibold rounded-lg cursor-pointer transition-colors"
-                              title="Permanently remove listing"
-                              aria-label={`Remove listing ${item.title}`}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                              <span>Delete</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                onNavigate({ page: 'details', itemId: item.id })
-                              }
-                              className="ml-auto text-xs font-semibold text-[#F05A36] hover:text-[#FF8A65] cursor-pointer"
-                            >
-                              View →
-                            </button>
+                            <div className="pt-3 border-t border-slate-200/80 dark:border-white/[0.08] flex items-center gap-2 flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() => onEditListing(item)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#1D293B] dark:hover:bg-[#334155] text-slate-800 dark:text-[#F8FAFC] text-xs font-semibold rounded-lg cursor-pointer transition-colors"
+                              >
+                                <Edit3 className="w-3.5 h-3.5 text-[#F05A36]" />
+                                <span>Edit</span>
+                              </button>
+                              {onToggleUnlist && (
+                                <button
+                                  type="button"
+                                  onClick={() => void onToggleUnlist(item.id, isUnlisted)}
+                                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg cursor-pointer transition-colors border ${
+                                    isUnlisted
+                                      ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                                      : 'bg-white dark:bg-[#111827] hover:bg-slate-100 dark:hover:bg-[#1D293B] text-slate-600 dark:text-[#94A3B8] border border-slate-200 dark:border-white/[0.08]'
+                                  }`}
+                                >
+                                  {isUnlisted ? (
+                                    <Eye className="w-3.5 h-3.5 text-amber-500" />
+                                  ) : (
+                                    <EyeOff className="w-3.5 h-3.5 text-slate-400" />
+                                  )}
+                                  <span>{isUnlisted ? 'Re-list' : 'Unlist'}</span>
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => void onToggleArchiveListing(item)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-[#111827] hover:bg-slate-100 dark:hover:bg-[#1D293B] text-slate-600 dark:text-[#94A3B8] border border-slate-200 dark:border-white/[0.08] text-xs font-semibold rounded-lg cursor-pointer transition-colors"
+                              >
+                                <Archive className="w-3.5 h-3.5" />
+                                <span>
+                                  {item.status === 'archived'
+                                    ? 'Restore'
+                                    : 'Archive'}
+                                </span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setListingToDelete(item)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 text-xs font-semibold rounded-lg cursor-pointer transition-colors"
+                                title="Permanently remove listing"
+                                aria-label={`Remove listing ${item.title}`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Delete</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  onNavigate({ page: 'details', itemId: item.id })
+                                }
+                                className="ml-auto text-xs font-semibold text-[#F05A36] hover:text-[#FF8A65] cursor-pointer"
+                              >
+                                View →
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
 

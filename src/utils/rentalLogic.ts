@@ -313,7 +313,12 @@ export function filterAndSortListings(
   const availableEnd = criteria.availableEnd;
 
   const filtered = listings.filter((item) => {
-    if (!criteria.includeArchived && item.status === 'archived') {
+    if (
+      !criteria.includeArchived &&
+      (item.status === 'archived' ||
+        item.status === 'unlisted' ||
+        item.isListed === false)
+    ) {
       return false;
     }
     if (sourceFilter === 'community' && item.isDemoData) {

@@ -52,6 +52,12 @@ import {
   supabaseUserToProfile,
   signOutSupabase,
 } from './services/supabase';
+import {
+  loadAllCommunityListings,
+  persistMarketplaceListing,
+  toggleListingListedState,
+  deleteMarketplaceListing,
+} from './services/marketplaceService';
 import { isSuperAdminEmail } from './utils/adminRbac';
 import { Navbar, PageRoute } from './components/Navbar';
 import { Footer, FooterInfoPageKey } from './components/layout/Footer';
@@ -432,29 +438,19 @@ export default function App() {
     setNotifications((prev) => [newItem, ...prev]);
   };
 
-  // Load community listings and verified reviews from Firestore
+  // Load unified community listings (localStorage + Supabase) and verified reviews
   const loadCommunityData = async () => {
     setIsLoadingListings(true);
     setListingsError(null);
     try {
-      const [communityItems, verifiedReviews] = await Promise.all([
-        fetchActiveCommunityListings(),
-        fetchVerifiedReviewsFromFirestore(),
+      const [allMarketplaceItems, verifiedReviews] = await Promise.all([
+        loadAllCommunityListings(),
+        fetchVerifiedReviewsFromFirestore().catch(() => []),
       ]);
-      setListings((prev) => {
-        const demoItems = prev.filter((i) => i.isDemoData);
-        const byId = new Map<string, ProductListing>();
-        for (const item of communityItems) {
-          byId.set(item.id, item);
-        }
-        for (const item of demoItems) {
-          byId.set(item.id, item);
-        }
-        return Array.from(byId.values());
-      });
+      setListings(allMarketplaceItems);
       setReviews(verifiedReviews);
     } catch (err) {
-      console.warn('Could not load community listings from Firestore:', err);
+      console.warn('Could not load community listings:', err);
     } finally {
       setIsLoadingListings(false);
     }
@@ -824,36 +820,75 @@ export default function App() {
     savedListing: ProductListing,
     isEdit: boolean
   ) => {
+    // 1. Resilient unified persistence (localStorage + Supabase)
+    const persisted = await persistMarketplaceListing(savedListing, isEdit);
+
+    // 2. Safe async Firestore sync (catches without throwing)
     if (userProfile && !savedListing.isDemoData) {
-      if (isEdit) {
-        await updateListingInFirestore(savedListing);
-      } else {
-        await createListingInFirestore(savedListing);
+      try {
+        if (isEdit) {
+          await updateListingInFirestore(persisted);
+        } else {
+          await createListingInFirestore(persisted);
+        }
+      } catch (err) {
+        console.warn('Firestore listing sync skipped:', err);
       }
     }
 
     setListings((prev) => {
-      const exists = prev.some((i) => i.id === savedListing.id);
+      const exists = prev.some((i) => i.id === persisted.id);
       if (exists) {
-        return prev.map((i) => (i.id === savedListing.id ? savedListing : i));
+        return prev.map((i) => (i.id === persisted.id ? persisted : i));
       }
-      return [savedListing, ...prev];
+      return [persisted, ...prev];
     });
     setEditingListing(null);
     addNotification(
       isEdit ? 'Listing Updated' : 'Listing Published',
-      `${savedListing.title} is now live in ${savedListing.city}.`
+      `${persisted.title} is now live in ${persisted.city}.`
+    );
+  };
+
+  const handleToggleUnlistListing = async (
+    listingId: string,
+    relist: boolean
+  ) => {
+    await toggleListingListedState(listingId, relist);
+    setListings((prev) =>
+      prev.map((item) =>
+        item.id === listingId
+          ? {
+              ...item,
+              isListed: relist,
+              status: relist ? 'available' : 'unlisted',
+            }
+          : item
+      )
+    );
+    const target = listings.find((i) => i.id === listingId);
+    addNotification(
+      relist ? 'Listing Re-listed' : 'Listing Unlisted',
+      relist
+        ? `${target?.title || 'Item'} is now live on the marketplace!`
+        : `${target?.title || 'Item'} has been unlisted and hidden from public search.`
     );
   };
 
   const handleToggleArchiveListing = async (listing: ProductListing) => {
-    const nextStatus = listing.status === 'archived' ? 'active' : 'archived';
+    const nextStatus = listing.status === 'archived' ? 'available' : 'archived';
     const updated: ProductListing = {
       ...listing,
       status: nextStatus,
+      isListed: nextStatus !== 'archived',
     };
+    await persistMarketplaceListing(updated, true);
     if (!listing.isDemoData && userProfile) {
-      await updateListingInFirestore(updated);
+      try {
+        await updateListingInFirestore(updated);
+      } catch (err) {
+        console.warn('Firestore archive update skipped:', err);
+      }
     }
     setListings((prev) =>
       prev.map((item) => (item.id === listing.id ? updated : item))
@@ -878,16 +913,23 @@ export default function App() {
       setEditingListing(null);
     }
 
-    // 2. Persist deletion in Firestore and local storage
+    // 2. Persist deletion in unified store (localStorage + Supabase)
+    try {
+      await deleteMarketplaceListing(listingId);
+    } catch (err) {
+      console.warn('Failed deleting from marketplace store:', err);
+    }
+
+    // 3. Optional Firestore delete
     if (userProfile && targetListing && !targetListing.isDemoData) {
       try {
         await deleteListingFromFirestore(listingId, userProfile.uid);
       } catch (err) {
-        console.error('Failed to delete listing from remote store:', err);
+        console.warn('Failed to delete listing from remote store:', err);
       }
     }
 
-    // 3. User feedback toast
+    // 4. User feedback toast
     addNotification('Listing Removed', `"${title}" was removed successfully.`);
   };
 
@@ -1289,6 +1331,7 @@ export default function App() {
             handleNavigate({ page: 'list-item' });
           }}
           onToggleArchiveListing={handleToggleArchiveListing}
+          onToggleUnlist={handleToggleUnlistListing}
           onDeleteListing={handleDeleteListing}
           onUpdateBookingWorkflow={handleUpdateBookingWorkflow}
           onSendMessage={handleSendMessage}
@@ -1308,9 +1351,14 @@ export default function App() {
           onLogout={handleLogout}
           onNavigate={handleNavigate}
           userListings={listings.filter(
-            (l) => !l.isDemoData && l.owner.id === userProfile.uid
+            (l) =>
+              !l.isDemoData &&
+              (l.owner.id === userProfile.uid ||
+                (userProfile.email && l.ownerEmail === userProfile.email))
           )}
           userRequests={rentalRequests}
+          onToggleUnlist={handleToggleUnlistListing}
+          onDeleteListing={handleDeleteListing}
         />
       );
     }

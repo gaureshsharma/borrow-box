@@ -143,6 +143,7 @@ export const ListItemPage: React.FC<ListItemPageProps> = ({
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Phase 4 AI Assistant states
   const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
@@ -285,6 +286,8 @@ export const ListItemPage: React.FC<ListItemPageProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving || isSubmitting) return;
+
     const validation = validateListingInput({
       title,
       category,
@@ -352,7 +355,10 @@ export const ListItemPage: React.FC<ListItemPageProps> = ({
       minRentalDays: Math.max(1, Math.min(60, Number(minRentalDays) || 1)),
       featured: true,
       isDemoData: false,
-      status: editingListing?.status || 'active',
+      status: editingListing?.status || 'available',
+      isListed: editingListing?.isListed ?? true,
+      ownerEmail: demoUser?.email || editingListing?.ownerEmail || '',
+      createdAt: editingListing?.createdAt || new Date().toISOString(),
       cancellationPolicy,
       imageUrl: chosenImage,
       gallery: [
@@ -369,21 +375,23 @@ export const ListItemPage: React.FC<ListItemPageProps> = ({
         name: ownerName.trim(),
         neighborhood: neighborhood.trim(),
         city: validCity,
-        rating: editingListing?.owner.rating || 0,
+        rating: editingListing?.owner.rating || 5.0,
         completedRentals: editingListing?.owner.completedRentals || 0,
-        responseTime: 'New community listing',
+        responseTime: 'Usually responds in 1 hour',
         memberSince: '2026',
-        kycVerified: false,
+        kycVerified: true,
       },
     };
 
     setIsSaving(true);
+    setIsSubmitting(true);
     try {
       await onSaveListing(newListing, Boolean(editingListing));
       onNavigate({ page: 'details', itemId: newListing.id });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setIsSaving(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -1014,14 +1022,19 @@ export const ListItemPage: React.FC<ListItemPageProps> = ({
                 </button>
                 <button
                   type="submit"
-                  disabled={isSaving}
-                  className="px-6 py-2.5 text-sm font-semibold text-white bg-[#8B5CF6] hover:bg-[#7C3AED] rounded-xl transition-all bb-glow-button cursor-pointer"
+                  disabled={isSaving || isSubmitting}
+                  className="px-6 py-2.5 text-sm font-semibold text-white bg-[#F05A36] hover:bg-[#FF7243] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all shadow-md shadow-[#F05A36]/20 cursor-pointer flex items-center gap-2"
                 >
-                  {isSaving
-                    ? 'Saving Listing...'
-                    : editingListing
-                    ? 'Save Listing Changes'
-                    : 'Publish Rental Listing'}
+                  {isSaving || isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>{editingListing ? 'Saving Changes...' : 'Publishing Listing...'}</span>
+                    </>
+                  ) : editingListing ? (
+                    'Save Listing Changes'
+                  ) : (
+                    'Publish Rental Listing'
+                  )}
                 </button>
               </div>
             </form>

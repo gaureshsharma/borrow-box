@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import {
   ArrowLeft,
   CheckCircle2,
+  Eye,
+  EyeOff,
   LogOut,
   MapPin,
   Shield,
+  Trash2,
   User as UserIcon,
 } from 'lucide-react';
 import {
@@ -30,7 +33,7 @@ import {
   getStateForCity,
   getLocalitiesForCity,
 } from '../data/indiaLocations';
-import { updateUserProfileInFirestore } from '../services/firebase';
+import { persistUserProfile } from '../services/marketplaceService';
 import { PageRoute } from '../components/Navbar';
 
 interface ProfilePageProps {
@@ -41,6 +44,8 @@ interface ProfilePageProps {
   onNavigate: (route: PageRoute) => void;
   userListings: ProductListing[];
   userRequests: RentalRequestRecord[];
+  onToggleUnlist?: (listingId: string, relist: boolean) => Promise<void> | void;
+  onDeleteListing?: (listingId: string) => Promise<void> | void;
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({
@@ -51,6 +56,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   onNavigate,
   userListings,
   userRequests,
+  onToggleUnlist,
+  onDeleteListing,
 }) => {
   const [name, setName] = useState(userProfile.name);
   const [photoURL, setPhotoURL] = useState(userProfile.photoURL);
@@ -79,6 +86,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<ProductListing | null>(null);
 
   const formattedCreatedAt = new Date(
     userProfile.createdAtISO
@@ -93,7 +101,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     setSuccessMessage(null);
     setErrorMessage(null);
     try {
-      await updateUserProfileInFirestore(userProfile.uid, {
+      const updated = await persistUserProfile(userProfile.uid, {
         name,
         photoURL,
         city,
@@ -101,20 +109,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         phone,
         activeMode: newMode,
       });
-      onProfileUpdated({
-        ...userProfile,
-        activeMode: newMode,
-        updatedAtISO: new Date().toISOString(),
-      });
+      onProfileUpdated(updated);
       setSuccessMessage(
         `Switched active perspective to ${
           newMode === 'renter' ? 'Renter' : 'Owner'
         } mode.`
       );
-    } catch (err) {
-      setErrorMessage(
-        err instanceof Error ? err.message : 'Failed to update active mode.'
-      );
+    } catch {
+      setErrorMessage('Failed to update active mode.');
     }
   };
 
@@ -140,7 +142,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     setErrors({});
     setIsSaving(true);
     try {
-      await updateUserProfileInFirestore(userProfile.uid, {
+      const updated = await persistUserProfile(userProfile.uid, {
         name: name.trim(),
         photoURL: photoURL.trim(),
         city,
@@ -149,321 +151,325 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         activeMode,
       });
 
-      onProfileUpdated({
-        ...userProfile,
-        name: name.trim(),
-        photoURL: photoURL.trim(),
-        city,
-        neighborhood: neighborhood.trim(),
-        phone: phone.trim(),
-        activeMode,
-        updatedAtISO: new Date().toISOString(),
-      });
+      onProfileUpdated(updated);
       setSuccessMessage(
-        'Your profile and private contact details have been saved to Cloud Firestore.'
+        'Your profile and contact details have been saved successfully.'
       );
-    } catch (err) {
-      setErrorMessage(
-        err instanceof Error
-          ? err.message
-          : 'Could not save profile changes to Firestore.'
-      );
+    } catch {
+      setErrorMessage('Could not save profile changes.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleLogoutClick = async () => {
+  const handlePerformLogout = async () => {
     setIsLoggingOut(true);
     try {
       await onLogout();
+      onNavigate({ page: 'home' });
     } finally {
       setIsLoggingOut(false);
     }
   };
 
+  const hasVerifiedAdminAccess =
+    shouldShowAdminPanelOption(verifiedAdminRecord) ||
+    Boolean(userProfile?.isAdmin);
+  const adminPermissions = verifiedAdminRecord
+    ? computeEffectivePermissions(verifiedAdminRecord)
+    : null;
+
   return (
-    <div className="bg-transparent min-h-screen py-10 lg:py-12 text-[#F8FAFC]">
-      <div className="max-w-[1120px] mx-auto px-4 sm:px-6">
-        {/* Top Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pb-6 mb-8 border-b border-white/[0.08]">
+    <div className="bg-transparent min-h-screen py-10 lg:py-14 text-slate-900 dark:text-[#F8FAFC]">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-8">
+        {/* Navigation Breadcrumb / Header */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-slate-200/80 dark:border-white/[0.08]">
           <button
             type="button"
-            onClick={() => onNavigate({ page: 'browse' })}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#94A3B8] hover:text-[#8B5CF6] cursor-pointer"
+            onClick={() => onNavigate({ page: 'home' })}
+            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-[#94A3B8] hover:text-[#F05A36] cursor-pointer"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Back to Browse Items
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Marketplace</span>
           </button>
 
-          <div className="flex items-center gap-2.5">
-            {shouldShowAdminPanelOption(verifiedAdminRecord) &&
-              verifiedAdminRecord && (
-                <button
-                  type="button"
-                  onClick={() => onNavigate({ page: 'admin' })}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#F8FAFC] bg-[#8B5CF6]/15 hover:bg-[#8B5CF6]/25 border border-[#8B5CF6]/40 rounded-xl transition-colors cursor-pointer"
-                >
-                  <Shield className="w-3.5 h-3.5 text-[#8B5CF6]" />
-                  <span>Admin Panel</span>
-                </button>
-              )}
+          <div className="flex items-center gap-3">
+            {hasVerifiedAdminAccess && (
+              <button
+                type="button"
+                onClick={() => onNavigate({ page: 'admin' })}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F05A36]/15 border border-[#F05A36]/35 text-[#F05A36] text-xs font-semibold hover:bg-[#F05A36]/25 transition-colors cursor-pointer"
+              >
+                <Shield className="w-3.5 h-3.5" />
+                <span>Admin Panel</span>
+              </button>
+            )}
 
             <button
               type="button"
+              onClick={handlePerformLogout}
               disabled={isLoggingOut}
-              onClick={handleLogoutClick}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#F8FAFC] bg-[#161E2E] border border-white/[0.08] rounded-xl hover:bg-[#1D293B] cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-500/30 text-red-500 hover:bg-red-500/10 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
             >
-              <LogOut className="w-3.5 h-3.5 text-[#EF4444]" />
-              {isLoggingOut ? 'Signing Out...' : 'Log Out'}
+              <LogOut className="w-3.5 h-3.5" />
+              <span>{isLoggingOut ? 'Signing out...' : 'Sign Out'}</span>
             </button>
           </div>
         </div>
 
+        {/* Profile Card & Info */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column: Account Identity Summary & Dual Role Switcher */}
+          {/* Left Column: Avatar & Summary */}
           <div className="lg:col-span-5 space-y-6">
-            <div className="p-6 border border-white/[0.08] rounded-2xl bg-[#161E2E] space-y-5 shadow-xl">
+            <div className="p-6 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white/90 dark:bg-[#161E2E] space-y-5 shadow-xl">
               <div className="flex items-center gap-4">
-                {userProfile.photoURL ? (
-                  <img
-                    src={userProfile.photoURL}
-                    alt={userProfile.name}
-                    referrerPolicy="no-referrer"
-                    className="w-16 h-16 rounded-full object-cover border border-white/[0.12] bg-[#1D293B] shrink-0"
-                  />
-                ) : (
-                  <div className="w-16 h-16 rounded-full bg-[#8B5CF6] text-white flex items-center justify-center text-xl font-bold shrink-0">
-                    {userProfile.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
-
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF5733] to-[#F05A36] text-white flex items-center justify-center text-xl font-bold overflow-hidden shadow-lg shadow-[#F05A36]/25">
+                  {photoURL ? (
+                    <img
+                      src={photoURL}
+                      alt={name}
+                      className="w-full h-full object-cover"
+                      onError={() => setPhotoURL('')}
+                    />
+                  ) : (
+                    <span>{name.charAt(0).toUpperCase()}</span>
+                  )}
+                </div>
                 <div className="min-w-0">
-                  <h1 className="text-xl font-bold text-[#F8FAFC] truncate">
-                    {userProfile.name}
+                  <h1 className="text-base font-bold text-slate-900 dark:text-[#F8FAFC] truncate">
+                    {name}
                   </h1>
-                  <p className="text-xs text-[#94A3B8] truncate mt-0.5">
+                  <p className="text-xs text-slate-500 dark:text-[#94A3B8] truncate">
                     {userProfile.email}
                   </p>
-                  <p className="text-xs text-[#06B6D4] mt-1 flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-[#8B5CF6] shrink-0" />
-                    <span>
-                      {userProfile.neighborhood}, {userProfile.city}
-                    </span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Firestore Profile Attributes */}
-              <div className="pt-4 border-t border-white/[0.08] space-y-2.5 text-xs">
-                <div className="flex justify-between gap-2">
-                  <span className="text-[#94A3B8]">Unique User ID (UID)</span>
-                  <span className="font-mono-tabular text-[#F8FAFC] truncate max-w-[22ch]">
-                    {userProfile.uid}
-                  </span>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <span className="text-[#94A3B8]">Account Created</span>
-                  <span className="font-medium text-[#F8FAFC]">
-                    {formattedCreatedAt}
-                  </span>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <span className="text-[#94A3B8]">
-                    Marketplace Capabilities
-                  </span>
-                  <span className="font-medium text-[#F8FAFC]">
-                    Renter & Item Owner
-                  </span>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <span className="text-[#94A3B8]">
-                    Security Permission Tier
-                  </span>
-                  <span className="font-medium text-[#22C55E] inline-flex items-center gap-1">
-                    <Shield className="w-3.5 h-3.5 text-[#8B5CF6]" />
-                    {shouldShowAdminPanelOption(verifiedAdminRecord) &&
-                    verifiedAdminRecord
-                      ? `${
-                          ROLE_DEFINITIONS[verifiedAdminRecord.role]?.label ||
-                          'Administrator'
-                        } (/admins)`
-                      : 'Standard Member'}
+                  <span className="inline-flex items-center gap-1 text-[11px] text-[#F05A36] mt-1 font-semibold">
+                    <MapPin className="w-3 h-3" />
+                    <span>{city || 'India'}</span>
                   </span>
                 </div>
               </div>
 
-              {/* Dynamic Admin Panel Card — rendered ONLY for verified active administrators */}
-              {shouldShowAdminPanelOption(verifiedAdminRecord) &&
-                verifiedAdminRecord && (
-                  <div className="pt-4 border-t border-white/[0.08]">
-                    <div className="p-4 rounded-xl bg-[#111827] border border-[#8B5CF6]/35 space-y-2.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#F8FAFC]">
-                          <Shield className="w-3.5 h-3.5 text-[#8B5CF6]" />
-                          <span>Verified Administrative Access</span>
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-[#8B5CF6]/20 border border-[#8B5CF6]/40 text-[10px] font-mono text-[#06B6D4]">
-                          {
-                            computeEffectivePermissions(
-                              verifiedAdminRecord.role,
-                              verifiedAdminRecord.customPermissions,
-                              verifiedAdminRecord.revokedPermissions
-                            ).length
-                          }{' '}
-                          Perms
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-[#94A3B8] leading-relaxed">
-                        Role:{' '}
-                        <strong className="text-[#F8FAFC]">
-                          {ROLE_DEFINITIONS[verifiedAdminRecord.role]?.label}
-                        </strong>
-                        . Open your role-based administration console without
-                        re-authenticating.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => onNavigate({ page: 'admin' })}
-                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-semibold transition-colors cursor-pointer"
-                      >
-                        <Shield className="w-3.5 h-3.5" />
-                        <span>Open Admin Panel</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-              {/* Dual Renter / Owner Mode Switcher */}
-              <div className="pt-4 border-t border-white/[0.08] space-y-2">
-                <p className="text-xs font-semibold text-[#F8FAFC]">
-                  Active Marketplace Perspective
-                </p>
-                <p className="text-xs text-[#94A3B8] leading-relaxed">
-                  Every BorrowBox account can both borrow items from neighbors
-                  and list unused belongings to earn in ₹.
-                </p>
-                <div
-                  role="group"
-                  aria-label="Switch Renter or Owner Mode"
-                  className="grid grid-cols-2 gap-2 pt-1"
+              {/* Mode Switcher */}
+              <div className="p-1 rounded-xl bg-slate-100 dark:bg-[#111827] border border-slate-200/80 dark:border-white/[0.06] flex items-center text-xs">
+                <button
+                  type="button"
+                  onClick={() => handleModeSwitch('renter')}
+                  className={`flex-1 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
+                    activeMode === 'renter'
+                      ? 'bg-white dark:bg-[#1D293B] text-slate-900 dark:text-[#F8FAFC] shadow-sm'
+                      : 'text-slate-500 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F8FAFC]'
+                  }`}
                 >
-                  <button
-                    type="button"
-                    onClick={() => handleModeSwitch('renter')}
-                    className={`py-2 px-3 text-xs font-semibold rounded-xl border transition-colors cursor-pointer ${
-                      activeMode === 'renter'
-                        ? 'bg-[#8B5CF6] text-white border-[#8B5CF6]'
-                        : 'bg-[#111827] text-[#94A3B8] border-white/[0.08] hover:text-[#F8FAFC]'
-                    }`}
-                  >
-                    Renter Mode ({userRequests.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleModeSwitch('owner')}
-                    className={`py-2 px-3 text-xs font-semibold rounded-xl border transition-colors cursor-pointer ${
-                      activeMode === 'owner'
-                        ? 'bg-[#8B5CF6] text-white border-[#8B5CF6]'
-                        : 'bg-[#111827] text-[#94A3B8] border-white/[0.08] hover:text-[#F8FAFC]'
-                    }`}
-                  >
-                    Owner Mode ({userListings.length})
-                  </button>
+                  Renter Mode
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleModeSwitch('owner')}
+                  className={`flex-1 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
+                    activeMode === 'owner'
+                      ? 'bg-white dark:bg-[#1D293B] text-slate-900 dark:text-[#F8FAFC] shadow-sm'
+                      : 'text-slate-500 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F8FAFC]'
+                  }`}
+                >
+                  Owner Mode
+                </button>
+              </div>
+
+              {/* Account Details */}
+              <div className="space-y-2 text-xs text-slate-600 dark:text-[#94A3B8] pt-2 border-t border-slate-200/80 dark:border-white/[0.08]">
+                <div className="flex justify-between">
+                  <span>Member Since:</span>
+                  <span className="font-semibold text-slate-900 dark:text-[#F8FAFC]">{formattedCreatedAt}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Trust Status:</span>
+                  <span className="text-emerald-500 font-semibold flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Verified Member</span>
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Active Mode Activity Summary */}
-            <div className="p-6 border border-white/[0.08] rounded-2xl bg-[#161E2E] space-y-3 shadow-xl">
+            {/* Owner Listings / Activity Section */}
+            <div className="p-6 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white/90 dark:bg-[#161E2E] space-y-4 shadow-xl">
               {activeMode === 'renter' ? (
                 <>
-                  <h2 className="text-sm font-semibold text-[#F8FAFC]">
-                    Your Renter Activity
-                  </h2>
-                  <p className="text-xs text-[#94A3B8] leading-relaxed">
-                    You have submitted{' '}
-                    <strong className="text-[#F8FAFC]">
-                      {userRequests.length}
-                    </strong>{' '}
-                    rental request(s) in this session.
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-[#F8FAFC]">
+                      Your Renter Activity
+                    </h2>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#1D293B] text-slate-600 dark:text-[#94A3B8] font-semibold">
+                      {userRequests.length} Requests
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-[#94A3B8] leading-relaxed">
+                    View items you have rented or requested from neighborhood owners.
                   </p>
                   <button
                     type="button"
                     onClick={() => onNavigate({ page: 'browse' })}
-                    className="px-4 py-2 bg-[#8B5CF6] text-white text-xs font-semibold rounded-xl hover:bg-[#7C3AED] cursor-pointer"
+                    className="w-full px-4 py-2 bg-[#F05A36] text-white text-xs font-semibold rounded-xl hover:bg-[#E65100] bb-glow-button cursor-pointer"
                   >
                     Explore Items to Rent
                   </button>
                 </>
               ) : (
                 <>
-                  <h2 className="text-sm font-semibold text-[#F8FAFC]">
-                    Your Owner Listings
-                  </h2>
-                  <p className="text-xs text-[#94A3B8] leading-relaxed">
-                    You have published{' '}
-                    <strong className="text-[#F8FAFC]">
-                      {userListings.length}
-                    </strong>{' '}
-                    item listing(s) in this session.
-                  </p>
-                  {userListings.length > 0 && (
-                    <ul className="space-y-1.5 text-xs text-[#F8FAFC] pt-1">
-                      {userListings.map((item) => (
-                        <li
-                          key={item.id}
-                          className="flex justify-between items-center bg-[#111827] p-2.5 rounded-lg border border-white/[0.08]"
-                        >
-                          <span className="truncate max-w-[24ch] font-medium">
-                            {item.title}
-                          </span>
-                          <span className="font-mono-tabular font-semibold text-[#06B6D4]">
-                            {formatINR(item.dailyPriceINR)}/day
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-sm font-bold text-slate-900 dark:text-[#F8FAFC]">
+                        Your Owner Listings
+                      </h2>
+                      <p className="text-xs text-slate-500 dark:text-[#94A3B8]">
+                        You have {userListings.length} item listing(s) (
+                        {
+                          userListings.filter(
+                            (i) =>
+                              i.isListed !== false &&
+                              i.status !== 'unlisted' &&
+                              i.status !== 'archived'
+                          ).length
+                        }{' '}
+                        active ·{' '}
+                        {
+                          userListings.filter(
+                            (i) =>
+                              i.isListed === false ||
+                              i.status === 'unlisted' ||
+                              i.status === 'archived'
+                          ).length
+                        }{' '}
+                        unlisted)
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onNavigate({ page: 'list-item' })}
+                      className="px-3 py-1.5 bg-[#F05A36] text-white text-xs font-semibold rounded-xl hover:bg-[#E65100] bb-glow-button cursor-pointer"
+                    >
+                      + List Item
+                    </button>
+                  </div>
+
+                  {userListings.length > 0 ? (
+                    <div className="space-y-2.5 pt-1 max-h-96 overflow-y-auto pr-1">
+                      {userListings.map((item) => {
+                        const isUnlisted =
+                          item.isListed === false || item.status === 'unlisted';
+                        return (
+                          <div
+                            key={item.id}
+                            className="bg-slate-50 dark:bg-[#111827] p-3 rounded-xl border border-slate-200/80 dark:border-white/[0.08] flex flex-col gap-2.5"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <h3 className="font-semibold text-xs sm:text-sm text-slate-900 dark:text-[#F8FAFC] truncate max-w-[28ch]">
+                                  {item.title}
+                                </h3>
+                                <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-[#94A3B8]">
+                                  <span>{item.category}</span>
+                                  <span>·</span>
+                                  <span className="font-mono-tabular font-semibold text-[#F05A36]">
+                                    {formatINR(item.dailyPriceINR)}/day
+                                  </span>
+                                </div>
+                              </div>
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                                  isUnlisted
+                                    ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                                    : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                                }`}
+                              >
+                                {isUnlisted ? 'Unlisted' : 'Active'}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-slate-200/60 dark:border-white/[0.06]">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  onToggleUnlist &&
+                                  onToggleUnlist(item.id, isUnlisted)
+                                }
+                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold border cursor-pointer transition-colors ${
+                                  isUnlisted
+                                    ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                                    : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                                }`}
+                                title={
+                                  isUnlisted
+                                    ? 'Make item live in marketplace'
+                                    : 'Hide item from search'
+                                }
+                              >
+                                {isUnlisted ? (
+                                  <Eye className="w-3 h-3" />
+                                ) : (
+                                  <EyeOff className="w-3 h-3" />
+                                )}
+                                <span>
+                                  {isUnlisted ? 'Re-list' : 'Unlist / Pause'}
+                                </span>
+                              </button>
+
+                              <div className="flex items-center gap-1.5 ml-auto">
+                                <button
+                                  type="button"
+                                  onClick={() => setItemToDelete(item)}
+                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold text-red-500 hover:bg-red-500/10 cursor-pointer"
+                                  title="Permanently delete listing"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                  <span>Delete</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    onNavigate({
+                                      page: 'details',
+                                      itemId: item.id,
+                                    })
+                                  }
+                                  className="text-[11px] font-semibold text-[#F05A36] hover:underline cursor-pointer"
+                                >
+                                  View →
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center border border-dashed border-slate-200 dark:border-white/[0.1] rounded-xl text-xs text-slate-500">
+                      No equipment listed yet.
+                    </div>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => onNavigate({ page: 'list-item' })}
-                    className="px-4 py-2 bg-[#8B5CF6] text-white text-xs font-semibold rounded-xl hover:bg-[#7C3AED] cursor-pointer"
-                  >
-                    + List Another Item
-                  </button>
                 </>
               )}
             </div>
           </div>
 
-          {/* Right Column: Edit Firestore Profile Form */}
+          {/* Right Column: Edit Profile Form */}
           <div className="lg:col-span-7">
-            <div className="p-6 sm:p-8 border border-white/[0.08] rounded-2xl bg-[#161E2E] space-y-6 shadow-2xl">
+            <div className="p-6 sm:p-8 border border-slate-200/80 dark:border-white/[0.08] rounded-2xl bg-white/90 dark:bg-[#161E2E] space-y-6 shadow-2xl">
               <div>
-                <h2 className="text-lg font-bold text-[#F8FAFC]">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-[#F8FAFC]">
                   Edit Profile & Isolated Contact Information
                 </h2>
-                <p className="text-xs text-[#94A3B8] mt-1">
-                  Public display fields are stored in{' '}
-                  <code className="font-mono-tabular text-[#06B6D4]">
-                    /users/{userProfile.uid.slice(0, 8)}...
-                  </code>{' '}
-                  while your private email and phone number are isolated in{' '}
-                  <code className="font-mono-tabular text-[#06B6D4]">
-                    /private/info
-                  </code>
-                  .
+                <p className="text-xs text-slate-500 dark:text-[#94A3B8] mt-1">
+                  Your profile and contact details are securely managed with end-to-end privacy for seamless neighborhood handovers.
                 </p>
               </div>
 
               {successMessage && (
                 <div
                   role="status"
-                  className="p-3.5 rounded-lg bg-[#22C55E]/15 border border-[#22C55E]/30 text-xs text-[#22C55E] flex items-start gap-2"
+                  className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-xs text-emerald-600 dark:text-emerald-400 flex items-start gap-2"
                 >
-                  <CheckCircle2 className="w-4 h-4 text-[#22C55E] shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                   <span>{successMessage}</span>
                 </div>
               )}
@@ -471,102 +477,73 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               {errorMessage && (
                 <div
                   role="alert"
-                  className="p-3.5 rounded-lg bg-[#EF4444]/10 border border-[#EF4444]/30 text-xs text-[#EF4444]"
+                  className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-500"
                 >
                   {errorMessage}
                 </div>
               )}
 
               <form onSubmit={handleSaveProfile} noValidate className="space-y-4">
+                {/* Full Name */}
                 <div>
-                  <label
-                    htmlFor="profile-name"
-                    className="block text-xs font-semibold text-[#F8FAFC] mb-1"
-                  >
-                    Full Name *
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-[#94A3B8] mb-1.5">
+                    Full Name
                   </label>
                   <input
-                    id="profile-name"
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#111827] border border-white/[0.08] rounded-xl text-sm text-[#F8FAFC] focus:outline-none focus:border-[#8B5CF6]"
+                    placeholder="Your legal or display name"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-white/[0.08] text-sm text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-400 dark:placeholder:text-[#64748B] focus:outline-none focus:border-[#F05A36]"
                   />
                   {errors.name && (
-                    <p className="text-xs text-[#EF4444] mt-1">{errors.name}</p>
+                    <p className="text-[11px] text-red-500 mt-1">{errors.name}</p>
                   )}
                 </div>
 
-                <div>
-                  <label
-                    htmlFor="profile-email-readonly"
-                    className="block text-xs font-semibold text-[#F8FAFC] mb-1"
-                  >
-                    Verified Account Email (Private PII)
-                  </label>
-                  <input
-                    id="profile-email-readonly"
-                    type="email"
-                    value={userProfile.email}
-                    disabled
-                    className="w-full px-3.5 py-2.5 bg-[#111827]/60 border border-white/[0.06] rounded-xl text-sm text-[#94A3B8] cursor-not-allowed"
-                  />
-                </div>
-
+                {/* State & City Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label
-                      htmlFor="profile-state"
-                      className="block text-xs font-semibold text-[#F8FAFC] mb-1"
-                    >
-                      State / Union Territory
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#94A3B8] mb-1.5">
+                      State / UT
                     </label>
                     <select
-                      id="profile-state"
                       value={selectedState}
                       onChange={(e) => {
-                        const nextState = e.target.value;
-                        setSelectedState(nextState);
-                        if (nextState) {
-                          const stateObj = INDIA_STATES_AND_UTS.find(
-                            (s) => s.name === nextState
-                          );
-                          if (stateObj && !stateObj.cities.includes(city)) {
-                            setCity(stateObj.cities[0]);
-                          }
+                        const newSt = e.target.value;
+                        setSelectedState(newSt);
+                        const stateObj = INDIA_STATES_AND_UTS.find(
+                          (s) => s.name === newSt
+                        );
+                        if (stateObj && stateObj.cities.length > 0) {
+                          setCity(stateObj.cities[0]);
+                          setNeighborhood('');
                         }
                       }}
-                      className="w-full px-3.5 py-2.5 bg-[#111827] border border-white/[0.08] rounded-xl text-sm text-[#F8FAFC] focus:outline-none focus:border-[#8B5CF6]"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-white/[0.08] text-sm text-slate-900 dark:text-[#F8FAFC] focus:outline-none focus:border-[#F05A36]"
                     >
-                      <option value="">All States & UTs (or select State)</option>
+                      <option value="">Select State</option>
                       {INDIA_STATES_AND_UTS.map((st) => (
                         <option key={st.name} value={st.name}>
-                          {st.name} ({st.type === 'ut' ? 'UT' : 'State'})
+                          {st.name} ({st.type === 'UT' ? 'UT' : 'State'})
                         </option>
                       ))}
                     </select>
                   </div>
 
                   <div>
-                    <label
-                      htmlFor="profile-city"
-                      className="block text-xs font-semibold text-[#F8FAFC] mb-1"
-                    >
-                      City *
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-[#94A3B8] mb-1.5">
+                      City
                     </label>
                     <select
-                      id="profile-city"
                       value={city}
                       onChange={(e) => {
-                        const nextCity = e.target.value as IndianCity;
-                        setCity(nextCity);
-                        if (nextCity) {
-                          const parentState = getStateForCity(nextCity);
-                          if (parentState) setSelectedState(parentState);
-                        }
+                        setCity(e.target.value as IndianCity);
+                        setNeighborhood('');
                       }}
-                      className="w-full px-3.5 py-2.5 bg-[#111827] border border-white/[0.08] rounded-xl text-sm text-[#F8FAFC] focus:outline-none focus:border-[#8B5CF6]"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-white/[0.08] text-sm text-slate-900 dark:text-[#F8FAFC] focus:outline-none focus:border-[#F05A36]"
                     >
+                      <option value="">Select City</option>
                       {availableCities.map((c) => (
                         <option key={c} value={c}>
                           {c}
@@ -574,48 +551,32 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                       ))}
                     </select>
                     {errors.city && (
-                      <p className="text-xs text-[#EF4444] mt-1">{errors.city}</p>
+                      <p className="text-[11px] text-red-500 mt-1">{errors.city}</p>
                     )}
                   </div>
                 </div>
 
+                {/* Locality */}
                 <div>
-                  <label
-                    htmlFor="profile-neighborhood"
-                    className="block text-xs font-semibold text-[#F8FAFC] mb-1"
-                  >
-                    Neighborhood / Locality *
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-[#94A3B8] mb-1.5">
+                    Neighborhood / Locality
                   </label>
                   <input
-                    id="profile-neighborhood"
-                    list="profile-locality-options"
                     type="text"
                     value={neighborhood}
                     onChange={(e) => setNeighborhood(e.target.value)}
-                    placeholder={
-                      city
-                        ? `e.g., Locality in ${city}`
-                        : 'e.g., Indiranagar, Bandra West'
-                    }
-                    className="w-full px-3.5 py-2.5 bg-[#111827] border border-white/[0.08] rounded-xl text-sm text-[#F8FAFC] focus:outline-none focus:border-[#8B5CF6]"
+                    placeholder="e.g. Indiranagar, Connaught Place, Bandra West"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-white/[0.08] text-sm text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-400 dark:placeholder:text-[#64748B] focus:outline-none focus:border-[#F05A36]"
                   />
-                  <datalist id="profile-locality-options">
-                    {localitySuggestions.map((loc) => (
-                      <option key={loc} value={loc} />
-                    ))}
-                  </datalist>
                   {localitySuggestions.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mt-2">
-                      {localitySuggestions.slice(0, 6).map((loc) => (
+                      <span className="text-[11px] text-slate-500">Popular:</span>
+                      {localitySuggestions.slice(0, 5).map((loc) => (
                         <button
                           key={loc}
                           type="button"
                           onClick={() => setNeighborhood(loc)}
-                          className={`text-[11px] px-2 py-0.5 rounded-md border transition-colors cursor-pointer ${
-                            neighborhood === loc
-                              ? 'bg-[#8B5CF6] text-white border-[#8B5CF6]'
-                              : 'bg-[#111827] text-[#94A3B8] border-white/[0.08] hover:text-[#F8FAFC]'
-                          }`}
+                          className="px-2 py-0.5 rounded-md text-[11px] bg-slate-100 dark:bg-[#1D293B] text-slate-600 dark:text-[#94A3B8] hover:text-[#F05A36] cursor-pointer"
                         >
                           {loc}
                         </button>
@@ -623,68 +584,54 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                     </div>
                   )}
                   {errors.neighborhood && (
-                    <p className="text-xs text-[#EF4444] mt-1">
+                    <p className="text-[11px] text-red-500 mt-1">
                       {errors.neighborhood}
                     </p>
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label
-                      htmlFor="profile-phone"
-                      className="block text-xs font-semibold text-[#F8FAFC] mb-1"
-                    >
-                      Mobile Number (+91, Private PII)
-                    </label>
-                    <input
-                      id="profile-phone"
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="9876543210"
-                      className="w-full px-3.5 py-2.5 bg-[#111827] border border-white/[0.08] rounded-xl text-sm font-mono-tabular text-[#F8FAFC] focus:outline-none focus:border-[#8B5CF6]"
-                    />
-                    {errors.phone && (
-                      <p className="text-xs text-[#EF4444] mt-1">
-                        {errors.phone}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="profile-photo-url"
-                      className="block text-xs font-semibold text-[#F8FAFC] mb-1"
-                    >
-                      Profile Image URL (Optional)
-                    </label>
-                    <input
-                      id="profile-photo-url"
-                      type="url"
-                      value={photoURL}
-                      onChange={(e) => setPhotoURL(e.target.value)}
-                      placeholder="https://..."
-                      className="w-full px-3.5 py-2.5 bg-[#111827] border border-white/[0.08] rounded-xl text-sm text-[#F8FAFC] focus:outline-none focus:border-[#8B5CF6]"
-                    />
-                    {errors.photoURL && (
-                      <p className="text-xs text-[#EF4444] mt-1">
-                        {errors.photoURL}
-                      </p>
-                    )}
-                  </div>
+                {/* Mobile Phone */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-[#94A3B8] mb-1.5">
+                    Mobile Phone Number (Confidential)
+                  </label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="10-digit mobile number (+91)"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-white/[0.08] text-sm text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-400 dark:placeholder:text-[#64748B] focus:outline-none focus:border-[#F05A36]"
+                  />
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Used strictly for emergency verification and handover OTP. Never published publicly.
+                  </p>
+                  {errors.phone && (
+                    <p className="text-[11px] text-red-500 mt-1">{errors.phone}</p>
+                  )}
                 </div>
 
-                <div className="pt-2 flex items-center justify-end gap-3">
+                {/* Profile Image URL */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-[#94A3B8] mb-1.5">
+                    Avatar Image URL
+                  </label>
+                  <input
+                    type="url"
+                    value={photoURL}
+                    onChange={(e) => setPhotoURL(e.target.value)}
+                    placeholder="https://... (or leave empty for monogram)"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-white/[0.08] text-sm text-slate-900 dark:text-[#F8FAFC] placeholder:text-slate-400 dark:placeholder:text-[#64748B] focus:outline-none focus:border-[#F05A36]"
+                  />
+                </div>
+
+                {/* Submit Button */}
+                <div className="pt-2">
                   <button
                     type="submit"
                     disabled={isSaving}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-sm font-semibold rounded-xl transition-all bb-glow-button cursor-pointer disabled:opacity-50"
+                    className="px-6 py-2.5 rounded-xl bg-[#F05A36] hover:bg-[#E65100] text-white text-xs font-semibold bb-glow-button cursor-pointer disabled:opacity-50"
                   >
-                    <UserIcon className="w-4 h-4" />
-                    {isSaving
-                      ? 'Saving to Firestore...'
-                      : 'Save Profile Changes'}
+                    {isSaving ? 'Saving Changes...' : 'Save Profile Changes'}
                   </button>
                 </div>
               </form>
@@ -692,6 +639,65 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Delete Item Confirmation Modal */}
+      {itemToDelete && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="profile-delete-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+        >
+          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-[#121824] border border-slate-200 dark:border-white/[0.1] shadow-2xl p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3
+                  id="profile-delete-title"
+                  className="text-base font-bold text-slate-900 dark:text-[#F8FAFC]"
+                >
+                  Delete Item Listing?
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-[#94A3B8]">
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-[#94A3B8] leading-relaxed">
+              Are you sure you want to permanently delete &ldquo;
+              <strong>{itemToDelete.title}</strong>&rdquo;? It will disappear
+              from the marketplace and your owner listings.
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setItemToDelete(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold border border-slate-200 dark:border-white/[0.1] text-slate-700 dark:text-[#94A3B8] hover:bg-slate-100 dark:hover:bg-[#1E293B] cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const id = itemToDelete.id;
+                  setItemToDelete(null);
+                  if (onDeleteListing) {
+                    await onDeleteListing(id);
+                  }
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-500/20 cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete Permanently</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

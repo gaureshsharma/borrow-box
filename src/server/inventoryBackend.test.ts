@@ -35,3 +35,4 @@ test('Inventory Delete Workflow: verifies owner authorization and deletion logic
   assert.equal(inventory.length, 1);
   assert.equal(inventory[0].id, 'item-2');
 });
+
