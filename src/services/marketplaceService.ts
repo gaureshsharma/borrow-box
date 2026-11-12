@@ -295,3 +295,4 @@ export async function persistUserProfile(
 
   return mergedProfile;
 }
+
