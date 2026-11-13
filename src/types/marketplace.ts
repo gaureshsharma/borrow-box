@@ -59,10 +59,19 @@ export interface ProductListing {
   minRentalDays: number;
   featured: boolean;
   isDemoData: boolean;
-  status?: 'active' | 'archived' | 'available' | 'unlisted';
+  status?:
+    | 'active'
+    | 'archived'
+    | 'available'
+    | 'unlisted'
+    | 'draft'
+    | 'pending'
+    | 'rejected'
+    | 'paused';
   isListed?: boolean;
   ownerEmail?: string;
   createdAt?: string;
+  updatedAt?: string;
   cancellationPolicy?: CancellationPolicyType;
   imageUrl: string;
   gallery: ProductGalleryItem[];

@@ -1,4 +1,16 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+export interface VercelRequest {
+  method?: string;
+  query: Record<string, string | string[] | undefined>;
+  body: any;
+  headers: Record<string, string | string[] | undefined>;
+}
+
+export interface VercelResponse {
+  setHeader(name: string, value: string): void;
+  status(code: number): VercelResponse;
+  json(body: any): void;
+  end(): void;
+}
 import { DEMO_PRODUCT_LISTINGS } from '../src/data/demoCatalog.ts';
 
 // In-memory / serverless warm cache for shared community listings across Vercel requests

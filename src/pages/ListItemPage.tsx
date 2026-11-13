@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   CheckCircle2,
@@ -143,7 +143,7 @@ export const ListItemPage: React.FC<ListItemPageProps> = ({
     editingListing?.imageUrl || ''
   );
   const [ownerName, setOwnerName] = useState(
-    editingListing?.owner.name || demoUser?.name || ''
+    editingListing?.owner?.name || demoUser?.name || ''
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -358,12 +358,12 @@ export const ListItemPage: React.FC<ListItemPageProps> = ({
         },
       ],
       owner: {
-        id: demoUser?.uid || editingListing?.owner.id || `owner-${Date.now()}`,
+        id: demoUser?.uid || editingListing?.owner?.id || `owner-${Date.now()}`,
         name: effectiveOwnerName,
         neighborhood: effectiveNeighborhood,
         city: effectiveCity,
-        rating: editingListing?.owner.rating || 5.0,
-        completedRentals: editingListing?.owner.completedRentals || 0,
+        rating: editingListing?.owner?.rating || 5.0,
+        completedRentals: editingListing?.owner?.completedRentals || 0,
         responseTime: 'Usually responds in 1 hour',
         memberSince: '2026',
         kycVerified: true,

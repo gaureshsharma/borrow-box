@@ -176,7 +176,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     shouldShowAdminPanelOption(verifiedAdminRecord) ||
     Boolean(userProfile?.isAdmin);
   const adminPermissions = verifiedAdminRecord
-    ? computeEffectivePermissions(verifiedAdminRecord)
+    ? computeEffectivePermissions(
+        verifiedAdminRecord.role,
+        verifiedAdminRecord.customPermissions,
+        verifiedAdminRecord.revokedPermissions
+      )
     : null;
 
   return (
@@ -525,7 +529,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                       <option value="">Select State</option>
                       {INDIA_STATES_AND_UTS.map((st) => (
                         <option key={st.name} value={st.name}>
-                          {st.name} ({st.type === 'UT' ? 'UT' : 'State'})
+                          {st.name} ({st.type === 'ut' ? 'UT' : 'State'})
                         </option>
                       ))}
                     </select>

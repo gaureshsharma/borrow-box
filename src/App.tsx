@@ -119,6 +119,7 @@ import {
   RequestsModal,
   WishlistModal,
 } from './components/InfoAndRequestsModal';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { BorrowBoxIntro } from './components/BorrowBoxIntro';
 import {
   detectPrefersReducedMotion,
@@ -1323,16 +1324,21 @@ export default function App() {
 
     if (currentRoute.page === 'list-item') {
       return (
-        <ListItemPage
-          demoUser={userProfile}
-          editingListing={editingListing}
-          onSaveListing={handleSaveListing}
-          onCancelEdit={() => {
-            setEditingListing(null);
-            handleNavigate({ page: 'dashboard' });
-          }}
-          onNavigate={handleNavigate}
-        />
+        <ErrorBoundary
+          fallbackTitle="Unable to load Item Listing Form"
+          onReset={() => handleNavigate({ page: 'dashboard' })}
+        >
+          <ListItemPage
+            demoUser={userProfile}
+            editingListing={editingListing}
+            onSaveListing={handleSaveListing}
+            onCancelEdit={() => {
+              setEditingListing(null);
+              handleNavigate({ page: 'dashboard' });
+            }}
+            onNavigate={handleNavigate}
+          />
+        </ErrorBoundary>
       );
     }
 
@@ -1700,7 +1706,9 @@ export default function App() {
             }}
           >
             <Suspense fallback={routeFallback}>
-              {renderMainContent()}
+              <ErrorBoundary fallbackTitle="Unable to load this section">
+                {renderMainContent()}
+              </ErrorBoundary>
             </Suspense>
           </motion.div>
         </AnimatePresence>
