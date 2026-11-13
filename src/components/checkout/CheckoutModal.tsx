@@ -78,7 +78,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     refundableDepositINR: listing.refundableDepositINR,
     startDate,
     endDate,
-    minRentalDays: listing.minRentalDays || 1,
+    minRentalDays: 1,
   });
 
   // Query server gateway status

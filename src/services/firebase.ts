@@ -558,7 +558,7 @@ function mapDocToProductListing(data: Record<string, unknown>): ProductListing {
     ],
     availableFrom: String(data.availableFrom || '2026-10-29'),
     availableTo: String(data.availableTo || '2026-12-31'),
-    minRentalDays: Number(data.minRentalDays) || 1,
+    minRentalDays: 1,
     featured: true,
     isDemoData: false,
     status: data.status === 'archived' ? 'archived' : 'active',
@@ -700,7 +700,7 @@ export async function createListingInFirestore(
     ),
     availableFrom: (listing.availableFrom || '2026-10-29').slice(0, 10),
     availableTo: (listing.availableTo || '2026-12-31').slice(0, 10),
-    minRentalDays: Math.max(1, Math.min(60, Math.round(listing.minRentalDays || 1))),
+    minRentalDays: 1,
     status: listing.status || 'active',
     cancellationPolicy: (
       listing.cancellationPolicy || 'Flexible (Full refund 24h prior)'
@@ -764,7 +764,7 @@ export async function updateListingInFirestore(
     ),
     availableFrom: (listing.availableFrom || '2026-10-29').slice(0, 10),
     availableTo: (listing.availableTo || '2026-12-31').slice(0, 10),
-    minRentalDays: Math.max(1, Math.min(60, Math.round(listing.minRentalDays || 1))),
+    minRentalDays: 1,
     status: listing.status || 'active',
     cancellationPolicy: (
       listing.cancellationPolicy || 'Flexible (Full refund 24h prior)'

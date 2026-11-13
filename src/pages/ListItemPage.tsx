@@ -121,14 +121,18 @@ export const ListItemPage: React.FC<ListItemPageProps> = ({
     editingListing?.rentalRules?.join('. ') ||
       'Original Government ID required at pickup. Return clean and on time.'
   );
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, []);
   const [availableFrom, setAvailableFrom] = useState(
-    editingListing?.availableFrom || '2026-10-29'
+    editingListing?.availableFrom || todayStr
   );
   const [availableTo, setAvailableTo] = useState(
     editingListing?.availableTo || '2026-12-31'
   );
   const [minRentalDays, setMinRentalDays] = useState(
-    editingListing ? String(editingListing.minRentalDays) : '1'
+    editingListing ? String(editingListing.minRentalDays || 1) : '1'
   );
   const [cancellationPolicy, setCancellationPolicy] =
     useState<CancellationPolicyType>(
@@ -350,7 +354,7 @@ export const ListItemPage: React.FC<ListItemPageProps> = ({
         .split('.')
         .map((s) => s.trim())
         .filter(Boolean),
-      availableFrom: availableFrom || '2026-10-29',
+      availableFrom: availableFrom || todayStr,
       availableTo: availableTo || '2026-12-31',
       minRentalDays: Math.max(1, Math.min(60, Number(minRentalDays) || 1)),
       featured: true,
@@ -687,6 +691,7 @@ export const ListItemPage: React.FC<ListItemPageProps> = ({
                     onChange={(e) => setMinRentalDays(e.target.value)}
                     className="w-full px-3 py-2.5 bg-[#111827] border border-white/[0.08] rounded-xl text-sm font-mono-tabular text-[#F8FAFC]"
                   />
+                  <p className="text-[11px] text-[#94A3B8] mt-1">Default: 1 day (Rentable for 1+ days)</p>
                 </div>
               </div>
 

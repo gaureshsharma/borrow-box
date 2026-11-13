@@ -128,10 +128,11 @@ export function isListingAvailableForDates(
   const endMs = Date.parse(`${endDate}T00:00:00Z`);
   const diffDays = Math.round((endMs - startMs) / (1000 * 60 * 60 * 24));
   const days = diffDays === 0 ? 1 : diffDays;
-  if (days < listing.minRentalDays) {
+  // BorrowBox allows renting for any duration (1+ days). Never block valid 1+ day rentals.
+  if (days < 1) {
     return {
       available: false,
-      reason: `Requires a minimum rental of ${listing.minRentalDays} days.`,
+      reason: 'Minimum rental duration is 1 day.',
     };
   }
 

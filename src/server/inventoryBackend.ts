@@ -16,7 +16,10 @@ export function loadStoredInventory(): ProductListing[] {
       const raw = fs.readFileSync(INVENTORY_FILE_PATH, 'utf8');
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        return parsed.map((item: ProductListing) => ({
+          ...item,
+          minRentalDays: 1,
+        }));
       }
     }
   } catch (err) {
@@ -148,7 +151,7 @@ export function createMarketplaceListing(
     ],
     availableFrom: listingInput.availableFrom || '2026-10-29',
     availableTo: listingInput.availableTo || '2026-12-31',
-    minRentalDays: Math.max(1, Math.min(60, Math.round(Number(listingInput.minRentalDays) || 1))),
+    minRentalDays: 1,
     featured: Boolean(listingInput.featured),
     isDemoData: false,
     status: listingInput.status === 'archived' ? 'archived' : 'active',
@@ -386,3 +389,4 @@ export function registerInventoryRoutes(app: Express): void {
     }
   });
 }
+

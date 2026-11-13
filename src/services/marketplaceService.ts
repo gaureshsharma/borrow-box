@@ -175,7 +175,11 @@ export async function loadAllCommunityListings(options?: {
     // Non-blocking if Supabase table is not configured
   }
 
-  const allItems = Array.from(mergedMap.values());
+  // Normalize all items so users can rent gear for any duration (1+ days), eliminating legacy 5-day limits
+  const allItems = Array.from(mergedMap.values()).map((item) => ({
+    ...item,
+    minRentalDays: 1,
+  }));
 
   // Save unified community items back to localStorage for instant offline access
   writeStorage(
@@ -199,6 +203,7 @@ export async function persistMarketplaceListing(
   
   const standardized: ProductListing = {
     ...listing,
+    minRentalDays: 1,
     status: listing.status || 'active',
     isListed: listing.isListed ?? (listing.status !== 'unlisted' && listing.status !== 'archived' && listing.status !== 'paused'),
     createdAt: listing.createdAt || new Date().toISOString(),

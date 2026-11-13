@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   Calculator,
@@ -41,6 +41,32 @@ interface ProductDetailsPageProps {
   onDeleteListing?: (listingId: string) => Promise<void> | void;
 }
 
+/**
+ * Computes active, valid default booking dates starting from today
+ * (or listing.availableFrom if in the future) and ending next day (1 day rental).
+ */
+function getInitialBookingDates(item?: ProductListing) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const todayStr = `${year}-${month}-${day}`;
+
+  let start = todayStr;
+  if (item?.availableFrom && item.availableFrom > todayStr) {
+    start = item.availableFrom;
+  }
+
+  const startDateObj = new Date(start + 'T00:00:00');
+  startDateObj.setDate(startDateObj.getDate() + 1);
+  const endYear = startDateObj.getFullYear();
+  const endMonth = String(startDateObj.getMonth() + 1).padStart(2, '0');
+  const endDay = String(startDateObj.getDate()).padStart(2, '0');
+  const end = `${endYear}-${endMonth}-${endDay}`;
+
+  return { start, end, todayStr };
+}
+
 export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
   listing,
   allListings,
@@ -53,8 +79,19 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
 }) => {
   const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(0);
   const [confirmDeleteModalOpen, setConfirmDeleteModalOpen] = useState(false);
-  const [startDate, setStartDate] = useState('2026-11-05');
-  const [endDate, setEndDate] = useState('2026-11-08');
+
+  const initialDates = useMemo(() => getInitialBookingDates(listing), [listing?.id, listing?.availableFrom]);
+  const [startDate, setStartDate] = useState(() => initialDates.start);
+  const [endDate, setEndDate] = useState(() => initialDates.end);
+
+  useEffect(() => {
+    if (listing) {
+      const dates = getInitialBookingDates(listing);
+      setStartDate(dates.start);
+      setEndDate(dates.end);
+    }
+  }, [listing?.id, listing?.availableFrom]);
+
   const [borrowerName, setBorrowerName] = useState(demoUser?.name || '');
   const [borrowerPhone, setBorrowerPhone] = useState(demoUser?.phone || '');
   const [pickupNote, setPickupNote] = useState('');
@@ -77,7 +114,7 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
       listing.refundableDepositINR,
       startDate,
       endDate,
-      listing.minRentalDays
+      1 // BorrowBox allows renting for any duration (1+ days)
     );
   }, [listing, startDate, endDate]);
 
@@ -510,7 +547,7 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
                     {listing.availableFrom} to {listing.availableTo}
                   </p>
                   <p className="text-xs text-[#94A3B8] mt-1">
-                    Min {listing.minRentalDays}d · Policy:{' '}
+                    Min 1 day (Flexible duration) · Policy:{' '}
                     {listing.cancellationPolicy ||
                       'Flexible (Full refund 24h prior)'}
                   </p>
@@ -831,9 +868,20 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
                         id="rental-start-date"
                         type="date"
                         value={startDate}
-                        min={listing.availableFrom}
+                        min={listing.availableFrom && listing.availableFrom > initialDates.todayStr ? listing.availableFrom : initialDates.todayStr}
                         max={listing.availableTo}
-                        onChange={(e) => setStartDate(e.target.value)}
+                        onChange={(e) => {
+                          const newStart = e.target.value;
+                          setStartDate(newStart);
+                          if (!endDate || endDate <= newStart) {
+                            const nextDate = new Date(newStart + 'T00:00:00');
+                            nextDate.setDate(nextDate.getDate() + 1);
+                            const y = nextDate.getFullYear();
+                            const m = String(nextDate.getMonth() + 1).padStart(2, '0');
+                            const d = String(nextDate.getDate()).padStart(2, '0');
+                            setEndDate(`${y}-${m}-${d}`);
+                          }
+                        }}
                         className="w-full px-3 py-2 bg-[#111827] border border-white/[0.08] rounded-lg text-xs font-mono-tabular text-[#F8FAFC] focus:outline-none focus:border-[#8B5CF6]"
                       />
                     </div>
@@ -848,7 +896,7 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
                         id="rental-end-date"
                         type="date"
                         value={endDate}
-                        min={startDate || listing.availableFrom}
+                        min={startDate || (listing.availableFrom && listing.availableFrom > initialDates.todayStr ? listing.availableFrom : initialDates.todayStr)}
                         max={listing.availableTo}
                         onChange={(e) => setEndDate(e.target.value)}
                         className="w-full px-3 py-2 bg-[#111827] border border-white/[0.08] rounded-lg text-xs font-mono-tabular text-[#F8FAFC] focus:outline-none focus:border-[#8B5CF6]"

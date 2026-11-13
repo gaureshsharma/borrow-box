@@ -62,6 +62,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       const newListing = {
         ...listing,
         id: listingId,
+        minRentalDays: 1,
         status: listing.status || 'active',
         isListed: listing.isListed !== false && listing.status !== 'unlisted' && listing.status !== 'paused',
         owner: {
@@ -134,3 +135,4 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     res.status(500).json({ ok: false, error: err?.message || 'Server error' });
   }
 }
+
