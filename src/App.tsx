@@ -57,6 +57,8 @@ import {
   persistMarketplaceListing,
   toggleListingListedState,
   deleteMarketplaceListing,
+  readStorage,
+  STORAGE_KEYS,
 } from './services/marketplaceService';
 import { isSuperAdminEmail } from './utils/adminRbac';
 import { Navbar, PageRoute } from './components/Navbar';
@@ -291,9 +293,24 @@ function routeToUrl(route: PageRoute): string {
 }
 
 export default function App() {
-  const [listings, setListings] = useState<ProductListing[]>(
-    DEMO_PRODUCT_LISTINGS
-  );
+  const [listings, setListings] = useState<ProductListing[]>(() => {
+    try {
+      const stored = readStorage<ProductListing[]>(STORAGE_KEYS.ITEMS, []);
+      if (Array.isArray(stored) && stored.length > 0) {
+        const map = new Map<string, ProductListing>();
+        for (const item of DEMO_PRODUCT_LISTINGS) {
+          map.set(item.id, { ...item, minRentalDays: 1 });
+        }
+        for (const item of stored) {
+          if (item && item.id) {
+            map.set(item.id, { ...item, minRentalDays: 1 });
+          }
+        }
+        return Array.from(map.values());
+      }
+    } catch {}
+    return DEMO_PRODUCT_LISTINGS.map((i) => ({ ...i, minRentalDays: 1 }));
+  });
   const [isLoadingListings, setIsLoadingListings] = useState(false);
   const [listingsError, setListingsError] = useState<string | null>(null);
   const [editingListing, setEditingListing] = useState<ProductListing | null>(
@@ -828,7 +845,7 @@ export default function App() {
     const persisted = await persistMarketplaceListing(savedListing, isEdit, userProfile);
 
     // 2. Safe async Firestore sync (catches without throwing)
-    if (userProfile && !savedListing.isDemoData) {
+    if (userProfile && !savedListing.isDemoData && auth.currentUser) {
       try {
         if (isEdit) {
           await updateListingInFirestore(persisted);
@@ -887,7 +904,7 @@ export default function App() {
       isListed: nextStatus !== 'archived',
     };
     await persistMarketplaceListing(updated, true, userProfile);
-    if (!listing.isDemoData && userProfile) {
+    if (!listing.isDemoData && userProfile && auth.currentUser) {
       try {
         await updateListingInFirestore(updated);
       } catch (err) {
@@ -925,7 +942,7 @@ export default function App() {
     }
 
     // 3. Optional Firestore delete
-    if (userProfile && targetListing && !targetListing.isDemoData) {
+    if (userProfile && targetListing && !targetListing.isDemoData && auth.currentUser) {
       try {
         await deleteListingFromFirestore(listingId, userProfile.uid);
       } catch (err) {
@@ -1358,7 +1375,12 @@ export default function App() {
             (l) =>
               !l.isDemoData &&
               (l.owner.id === userProfile.uid ||
-                (userProfile.email && l.ownerEmail === userProfile.email))
+                (userProfile.email &&
+                  l.ownerEmail &&
+                  l.ownerEmail.toLowerCase() === userProfile.email.toLowerCase()) ||
+                (userProfile.name &&
+                  l.owner.name &&
+                  l.owner.name.toLowerCase() === userProfile.name.toLowerCase()))
           )}
           userRequests={rentalRequests}
           onToggleUnlist={handleToggleUnlistListing}
@@ -1588,6 +1610,8 @@ export default function App() {
             allReviews={reviews}
             onNavigate={handleNavigate}
             onLogout={handleLogout}
+            onToggleUnlist={handleToggleUnlistListing}
+            onDeleteListing={handleDeleteListing}
             onListingModerationChanged={(listingId, modStatus) => {
               setListings((prev) =>
                 prev.map((item) =>

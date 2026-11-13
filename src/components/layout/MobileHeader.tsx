@@ -163,30 +163,8 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
           />
         </a>
 
-        {/* Right: Directly Visible Auth Actions (or Authenticated Controls) + Theme Switch + Hamburger Menu */}
+        {/* Right: Directly Visible Auth Actions (or Authenticated Controls) + Hamburger Menu */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Aesthetic Theme Toggle Switch */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
-            title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
-            className="inline-flex items-center justify-center min-w-[36px] min-h-[36px] sm:min-w-[40px] sm:min-h-[40px] rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-[#161E2E] text-slate-700 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F8FAFC] bb-btn-interactive cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8B5CF6]"
-          >
-            <div className="relative w-4 h-4 flex items-center justify-center">
-              <Sun
-                className={`w-4 h-4 text-amber-500 absolute transition-all duration-300 transform ${
-                  isDark ? 'scale-0 -rotate-90 opacity-0' : 'scale-100 rotate-0 opacity-100'
-                }`}
-              />
-              <Moon
-                className={`w-4 h-4 text-violet-400 absolute transition-all duration-300 transform ${
-                  isDark ? 'scale-100 rotate-0 opacity-100' : 'scale-0 rotate-90 opacity-0'
-                }`}
-              />
-            </div>
-          </button>
-
           {!userProfile ? (
             <>
               <button
@@ -368,24 +346,6 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                   </div>
 
                   <div className="p-4 space-y-5 flex-1 pb-24">
-                    {/* Theme / Appearance Toggle inside Drawer */}
-                    <button
-                      type="button"
-                      onClick={toggleTheme}
-                      className="w-full min-h-[44px] text-left px-3 py-2.5 rounded-xl text-sm font-medium flex items-center justify-between border border-slate-200/80 dark:border-white/[0.08] bg-slate-50 dark:bg-[#161E2E] text-slate-800 dark:text-[#F8FAFC] bb-btn-interactive cursor-pointer"
-                    >
-                      <span className="inline-flex items-center gap-3">
-                        {isDark ? (
-                          <Moon className="w-4 h-4 text-violet-400 shrink-0" />
-                        ) : (
-                          <Sun className="w-4 h-4 text-amber-500 shrink-0" />
-                        )}
-                        <span>Appearance</span>
-                      </span>
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 capitalize">
-                        {theme} Mode
-                      </span>
-                    </button>
                     {/* Quick Search Input Inside Mobile Menu */}
                     <form
                       onSubmit={handleMobileSearchSubmit}

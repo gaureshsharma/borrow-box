@@ -15,7 +15,7 @@ export const STORAGE_KEYS = {
   ACTIVE_PROFILE: 'borrowbox_user_profile_v1',
 };
 
-function readStorage<T>(key: string, fallback: T): T {
+export function readStorage<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback;
   try {
     const raw = localStorage.getItem(key);
@@ -26,7 +26,7 @@ function readStorage<T>(key: string, fallback: T): T {
   }
 }
 
-function writeStorage<T>(key: string, value: T): void {
+export function writeStorage<T>(key: string, value: T): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(key, JSON.stringify(value));

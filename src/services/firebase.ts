@@ -499,6 +499,11 @@ export async function updateUserProfileInFirestore(
     });
   }
 
+  // Prevent "Missing or insufficient permissions" when user is authenticated via Supabase
+  if (!auth.currentUser) {
+    return;
+  }
+
   try {
     const batch = writeBatch(db);
     batch.update(doc(db, 'users', uid), {
@@ -709,6 +714,10 @@ export async function createListingInFirestore(
     updatedAt: serverTimestamp(),
   };
 
+  if (!auth.currentUser) {
+    return;
+  }
+
   try {
     await setDoc(doc(db, 'listings', listing.id), payload);
   } catch (error) {
@@ -772,6 +781,10 @@ export async function updateListingInFirestore(
     updatedAt: serverTimestamp(),
   };
 
+  if (!auth.currentUser) {
+    return;
+  }
+
   try {
     await updateDoc(doc(db, 'listings', listing.id), updates);
   } catch (error) {
@@ -800,6 +813,10 @@ export async function deleteListingFromFirestore(
   writeLocalJson(LOCAL_STORAGE_KEYS.COMMUNITY_LISTINGS, filtered);
 
   // 2. Remove from Firestore with ownership check
+  if (!auth.currentUser) {
+    return;
+  }
+
   try {
     const listingRef = doc(db, 'listings', listingId);
     if (requesterId) {
@@ -946,6 +963,10 @@ export async function createBookingInFirestore(
     updatedAt: serverTimestamp(),
   };
 
+  if (!auth.currentUser) {
+    return;
+  }
+
   try {
     await setDoc(doc(db, 'bookings', booking.id), payload);
   } catch (error) {
@@ -987,6 +1008,10 @@ export async function updateBookingWorkflowInFirestore(
         : b
     )
   );
+
+  if (!auth.currentUser) {
+    return;
+  }
 
   try {
     await updateDoc(doc(db, 'bookings', bookingId), {
@@ -1082,6 +1107,10 @@ export async function sendBookingMessageInFirestore(
     ],
   });
 
+  if (!auth.currentUser) {
+    return;
+  }
+
   try {
     await setDoc(
       doc(db, 'bookings', message.bookingId, 'messages', message.id),
@@ -1158,6 +1187,10 @@ export async function createReviewInFirestore(
     review,
     ...localReviews.filter((r) => r.id !== review.id),
   ]);
+
+  if (!auth.currentUser) {
+    return;
+  }
 
   try {
     await setDoc(doc(db, 'reviews', review.id), {

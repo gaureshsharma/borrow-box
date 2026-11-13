@@ -228,7 +228,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     (b) => b.ownerId === userProfile.uid
   );
   const myListings = listings.filter(
-    (l) => !l.isDemoData && l.owner.id === userProfile.uid
+    (l) =>
+      !l.isDemoData &&
+      (l.owner.id === userProfile.uid ||
+        (userProfile.email &&
+          l.ownerEmail &&
+          l.ownerEmail.toLowerCase() === userProfile.email.toLowerCase()) ||
+        (userProfile.name &&
+          l.owner.name &&
+          l.owner.name.toLowerCase() === userProfile.name.toLowerCase()))
   );
 
   // Compute Analytics Metrics for SaaS Dashboard Overview

@@ -485,28 +485,6 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
           )}
         </button>
 
-        {/* Aesthetic Theme Toggle (Dark / Light Mode) */}
-        <button
-          type="button"
-          onClick={toggleTheme}
-          aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
-          title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
-          className="inline-flex items-center justify-center h-9 w-9 rounded-lg border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-[#161E2E] hover:bg-slate-100 dark:hover:bg-[#1D293B] text-slate-700 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F8FAFC] bb-btn-interactive cursor-pointer relative overflow-hidden transition-colors"
-        >
-          <div className="relative w-4 h-4 flex items-center justify-center">
-            <Sun
-              className={`w-4 h-4 text-amber-500 absolute transition-all duration-300 transform ${
-                isDark ? 'scale-0 -rotate-90 opacity-0' : 'scale-100 rotate-0 opacity-100'
-              }`}
-            />
-            <Moon
-              className={`w-4 h-4 text-violet-400 absolute transition-all duration-300 transform ${
-                isDark ? 'scale-100 rotate-0 opacity-100' : 'scale-0 rotate-90 opacity-0'
-              }`}
-            />
-          </div>
-        </button>
-
         {/* Dynamic Admin Panel Link — strictly for verified active administrators */}
         {userProfile && hasVerifiedAdminAccess && (
           <a

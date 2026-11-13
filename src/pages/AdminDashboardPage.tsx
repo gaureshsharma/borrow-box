@@ -123,6 +123,8 @@ interface AdminDashboardPageProps {
     listingId: string,
     status: ListingModerationStatus
   ) => void;
+  onToggleUnlist?: (listingId: string, relist: boolean) => Promise<void> | void;
+  onDeleteListing?: (listingId: string) => Promise<void> | void;
 }
 
 const SECTION_ICONS: Record<AdminSectionId, React.ReactNode> = {
@@ -151,6 +153,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
   onNavigate,
   onLogout,
   onListingModerationChanged,
+  onToggleUnlist,
+  onDeleteListing,
 }) => {
   // Authentication & RBAC Session State
   const [isVerifyingAdmin, setIsVerifyingAdmin] = useState(
@@ -2529,6 +2533,43 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                                   Flag
                                 </button>
                               </>
+                            )}
+
+                            {onToggleUnlist && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void onToggleUnlist(
+                                    item.id,
+                                    item.isListed === false || item.status === 'unlisted'
+                                  )
+                                }
+                                className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition-colors ${
+                                  item.isListed === false || item.status === 'unlisted'
+                                    ? 'bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/30 text-emerald-400'
+                                    : 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/30 text-amber-400'
+                                }`}
+                                title={
+                                  item.isListed === false || item.status === 'unlisted'
+                                    ? 'Make item visible in public marketplace'
+                                    : 'Hide item from public search'
+                                }
+                              >
+                                {item.isListed === false || item.status === 'unlisted'
+                                  ? 'Re-list'
+                                  : 'Unlist'}
+                              </button>
+                            )}
+
+                            {onDeleteListing && (
+                              <button
+                                type="button"
+                                onClick={() => void onDeleteListing(item.id)}
+                                className="px-2.5 py-1.5 rounded-lg bg-red-600/15 hover:bg-red-600/25 border border-red-500/30 text-red-400 text-xs font-semibold cursor-pointer transition-colors"
+                                title="Delete listing permanently"
+                              >
+                                Delete
+                              </button>
                             )}
                           </div>
                         </div>
